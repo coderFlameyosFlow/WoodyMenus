@@ -96,7 +96,7 @@ public final class ItemEditor {
      * @return the builder for chaining
      */
     public ItemEditor setLore(boolean colorized, List<String> lore) {
-        if (!colorized) return this.setLore(lore);
+        if (colorized) return this.setLore(lore);
         this.meta.setLore(lore);
         return this;
     }
