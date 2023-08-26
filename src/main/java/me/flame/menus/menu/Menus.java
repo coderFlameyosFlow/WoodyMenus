@@ -26,6 +26,11 @@ public final class Menus {
         return new SimpleBuilder();
     }
 
+    @Contract(value = " -> new", pure = true)
+    public static @NotNull PaginatedBuilder paginated() {
+        return new PaginatedBuilder();
+    }
+
     /**
      * Get the Menu Factory to use instead of making Menus using Builders.
      * <p>
