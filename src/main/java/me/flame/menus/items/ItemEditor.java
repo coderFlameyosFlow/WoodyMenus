@@ -67,10 +67,12 @@ public final class ItemEditor {
      * @param lore the new lore of the itemStack
      * @return the builder for chaining
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach") // slight performance improvement
     public ItemEditor setLore(List<String> lore) {
-        List<String> ogLore = new ArrayList<>(lore.size());
-        for (String loreLine : lore)
-            ogLore.add(translateAlternateColorCodes('&', loreLine));
+        int loreSize = lore.size();
+        List<String> ogLore = new ArrayList<>(loreSize);
+        for (int i = 0; i < loreSize; i++)
+            ogLore.add(translateAlternateColorCodes('&', lore.get(i)));
         this.meta.setLore(ogLore);
         return this;
     }
@@ -96,7 +98,7 @@ public final class ItemEditor {
      * @return the builder for chaining
      */
     public ItemEditor setLore(boolean colorized, List<String> lore) {
-        if (colorized) return this.setLore(lore);
+        if (!colorized) return this.setLore(lore);
         this.meta.setLore(lore);
         return this;
     }
