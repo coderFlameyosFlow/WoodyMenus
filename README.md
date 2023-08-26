@@ -1,5 +1,5 @@
 # Woody
-High-performance and Safe Menus Library.
+No BS High-performance, Minimal and Safe Menus Library
 
 ### Key features (Including but not limited to):
 - Updating safely recreates all the items; leading to *EXPECTED* automatic updating.
