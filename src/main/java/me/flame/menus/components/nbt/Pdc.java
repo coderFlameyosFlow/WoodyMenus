@@ -1,24 +1,21 @@
 package me.flame.menus.components.nbt;
 
+import me.flame.menus.menu.Menus;
+
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static me.flame.menus.menu.Menus.PLUGIN;
 
 /**
  * Wrapper for compatibility with {@link LegacyNbt}.
  * This ideally wouldn't need exist, but legacy.
  */
 public final class Pdc implements NbtWrapper {
-
-    /**
-     * Plugin instance required for the {@link NamespacedKey}.
-     */
-    private static final Plugin PLUGIN = JavaPlugin.getProvidingPlugin(Pdc.class);
 
     /**
      * Sets a String NBT tag to the an {@link ItemStack}.
@@ -40,7 +37,7 @@ public final class Pdc implements NbtWrapper {
     /**
      * Removes a tag from an {@link ItemStack}.
      *
-     * @param itemStack The current {@link ItemStack} to be remove.
+     * @param itemStack The current {@link ItemStack} to be removed.
      * @param key       The NBT key to remove.
      * @return An {@link ItemStack} that has the tag removed.
      */
