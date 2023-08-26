@@ -36,7 +36,7 @@ public final class MenuItem {
     private @Nullable Consumer<InventoryClickEvent> clickAction;
 
     public void setItemStack(ItemStack itemStack) {
-        this.itemStack = ItemNbt.setString(itemStack, "mf-gui", uuid.toString());;
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());;
 
     }
 
