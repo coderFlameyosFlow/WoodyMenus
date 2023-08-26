@@ -1,6 +1,8 @@
 # Woody
 No BS High-performance, Minimal and Safe Menus Library
 
+If you need support, Check out the official discord server for help using my plugin/libraries [right here](https://discord.gg/Zj6KBS7UwX)
+
 ## Why use menu libraries?
 Menu libraries have stuck around our community for a long time.
 
