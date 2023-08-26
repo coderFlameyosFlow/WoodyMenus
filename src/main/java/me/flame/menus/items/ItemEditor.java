@@ -165,7 +165,7 @@ public final class ItemEditor {
      * @return the builder for chaining
      */
     public ItemEditor addAmount(int amount) {
-        this.item.add(amount);
+        this.item.setAmount(item.getAmount() + amount);
         return this;
     }
 
