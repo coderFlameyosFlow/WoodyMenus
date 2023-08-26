@@ -68,7 +68,7 @@ Now I don't know about OTHER frameworks, but Woody provides some special feature
     gui.open(...);
     ```
 
-    Horrendous! What is this? it's maybe even looks the same in raw spigot inventories! maybe slightly better, slightly worse.
+    Horrendous! What is this? it may even look the same in raw spigot inventories! maybe slightly better, slightly worse.
     Here is the Woody way:
 
     ```java
