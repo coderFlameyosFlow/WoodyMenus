@@ -3,23 +3,19 @@ package me.flame.menus.menu;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import me.flame.menus.listeners.*;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")
 public final class Menus {
-    private static final MenuFactory menuFactory = new MenuFactory();
+    public static final Plugin PLUGIN = JavaPlugin.getProvidingPlugin(Menus.class);
 
-    /**
-     * Register the events required for Click events AND Modifier Checking
-     * <p>
-     * This includes: Checking if Placing/Removing/Swapping/Cloning items is allowed
-     * <p>
-     * or any click/drag/open/close event that happens, it's pretty important unless you have some sort of dummy inventory.
-     */
-    public static void installMenus(Plugin plugin) {
-        Bukkit.getPluginManager().registerEvents(new MenuListeners(), plugin);
+    static {
+        Bukkit.getPluginManager().registerEvents(new MenuListeners(), PLUGIN);
     }
+
+    private static final MenuFactory menuFactory = new MenuFactory();
 
     @Contract(value = " -> new", pure = true)
     public static @NotNull SimpleBuilder menu() {
