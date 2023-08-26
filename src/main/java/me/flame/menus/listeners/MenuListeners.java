@@ -2,8 +2,11 @@ package me.flame.menus.listeners;
 
 import lombok.val;
 
+import me.flame.menus.components.nbt.ItemNbt;
+import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.BaseMenu;
 
+import me.flame.menus.menu.PaginatedMenu;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,7 +15,9 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -63,6 +68,27 @@ public final class MenuListeners implements Listener {
         if (topClick != null && inv.equals(ci)) topClick.accept(event);
         else if (bottomClick != null && event.getView().getBottomInventory().equals(ci)) bottomClick.accept(event);
         else if (defaultClick != null) defaultClick.accept(event);
+
+        MenuItem guiItem;
+
+        // Checks whether it's a paginated menu or not
+        if (menu instanceof PaginatedMenu) {
+            final PaginatedMenu paginatedGui = (PaginatedMenu) menu;
+
+            // Gets the menu item from the added items or the page items
+            guiItem = paginatedGui.getItem(event.getSlot());
+            if (guiItem == null) guiItem = paginatedGui.getFromPageItems(event.getSlot());
+
+        } else {
+            // The clicked GUI Item
+            guiItem = menu.getItem(event.getSlot());
+        }
+
+        if (!isMenuItem(event.getCurrentItem(), guiItem)) return;
+
+        // Executes the action of the item
+        final Consumer<InventoryClickEvent> itemAction = guiItem.getClickAction();
+        if (itemAction != null) itemAction.accept(event);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -133,5 +159,19 @@ public final class MenuListeners implements Listener {
 
     private boolean isOtherAction(final InventoryAction action) {
         return action == InventoryAction.CLONE_STACK || action == InventoryAction.UNKNOWN;
+    }
+
+    /**
+     * Checks if the item is or not a GUI item
+     *
+     * @param currentItem The current item clicked
+     * @param guiItem     The GUI item in the slot
+     * @return Whether it is or not a GUI item
+     */
+    private boolean isMenuItem(@Nullable final ItemStack currentItem, @Nullable final MenuItem guiItem) {
+        if (currentItem == null || guiItem == null) return false;
+        final String nbt = ItemNbt.getString(currentItem, "woody-menu");
+        if (nbt == null) return false;
+        return nbt.equals(guiItem.getUniqueId().toString());
     }
 }
