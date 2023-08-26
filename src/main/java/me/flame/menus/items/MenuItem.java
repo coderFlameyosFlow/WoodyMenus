@@ -1,6 +1,6 @@
 package me.flame.menus.items;
 
-import lombok.Setter;
+import me.flame.menus.components.nbt.ItemNbt;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -34,11 +34,18 @@ import java.util.function.Consumer;
 @SuppressWarnings("unused")
 public final class MenuItem {
     private @Nullable Consumer<InventoryClickEvent> clickAction;
-    private @Setter ItemStack itemStack;
+
+    public void setItemStack(ItemStack itemStack) {
+        this.itemStack = ItemNbt.setString(itemStack, "mf-gui", uuid.toString());;
+
+    }
+
+    private ItemStack itemStack;
     private final UUID uuid = UUID.randomUUID();
 
     public MenuItem(ItemStack itemStack, @Nullable Consumer<InventoryClickEvent> action) {
-        this.itemStack = Objects.requireNonNull(itemStack);
+        Objects.requireNonNull(itemStack);
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());;
         this.clickAction = action;
     }
 
