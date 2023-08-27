@@ -66,7 +66,7 @@ Now I don't know about OTHER frameworks, but Woody provides some special feature
     guiItem.setItemStack(item);
     guiItem.setAction(event -> ...); // optional
     gui.updateItem(20, item);
-    gui.open(...);
+    gui.open(...); // only if you need
     ```
 
     Horrendous! What is this? it may even look the same in raw spigot inventories! maybe slightly better, slightly worse.
@@ -78,12 +78,12 @@ Now I don't know about OTHER frameworks, but Woody provides some special feature
                        .done(); // new MenuItem instance
     menuItem.setClickAction(event -> ...); // optional
     menu.setItem(20, menuItem);
-    menu.open(...);
+    menu.open(...); // only if you need
 
     // even cleaner option if you don't use setClickAction
     menu.setItem(20, menu.getItem(20).editor() // again, do what you want
                          .done());
-    menu.open(...);
+    menu.open(...); // only if you need
     ```
     Now you're going to likely write a lot less, have realistically the same performance impact and enjoy readable & concise code.
 
