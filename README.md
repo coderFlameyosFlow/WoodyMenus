@@ -29,8 +29,9 @@ Some libraries **Such as InventoryFramework, triumph-gui, or mine** even provide
 
 This is why you would want to use a menu library, to save the hassle of making your own raw inventories and events
 
-## Why Woody? Why not triumph-gui? Why not InventoryFramework?
-Woody is minimal, woody is also feature rich, woody is fast.
+## Why Woody? Why not triumph-gui? Why not InventoryFramework? Why not anything else?
+Woody is minimal, Woody is also feature rich, Woody is fast.
+triumph-gui is great, and especially IF which is amazing.
 
 Now I don't know about OTHER frameworks, but Woody provides some special features such as:
 - Nice Support; everyone likes nice support, I have a lot of free time! (mostly, even if I try to have a life, and no I'm not obese)
