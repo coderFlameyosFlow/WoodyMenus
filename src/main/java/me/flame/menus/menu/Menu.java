@@ -13,4 +13,12 @@ public final class Menu extends BaseMenu<Menu> {
     Menu(int rows, String title, EnumSet<Modifier> modifiers) {
         super(rows, title, modifiers);
     }
+
+    Menu(MenuType type, String title, EnumSet<Modifier> modifiers) {
+        super(type, title, modifiers);
+    }
+
+    Menu(MenuType type, String title, EnumSet<Modifier> modifiers, boolean colorize) {
+        super(type, title, modifiers, colorize);
+    }
 }
