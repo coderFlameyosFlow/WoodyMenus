@@ -3,6 +3,7 @@ package me.flame.menus.menu.iterator;
 import me.flame.menus.menu.BaseMenu;
 import me.flame.menus.menu.Slot;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -30,24 +31,34 @@ public final class MenuIterator {
 		this.direction = direction;
 	}
 
-	public Slot nextSlot(boolean emptyOnly) {
-
+	public @Nullable Slot nextSlot(boolean emptyOnly) {
 
 		if(!emptyOnly) {
 			Slot newPos = direction.shift(currentPosition, menu.getRows());
+			if(newPos.getRow() >= menu.getRows() || newPos.getRow() < 0
+							|| newPos.getColumn() > 8 || newPos.getColumn() < 0) {
+				return null;
+			}
 			currentPosition = newPos;
 			return newPos;
 		}
 
 		while(menu.getOptionalItem(currentPosition).isPresent()) {
-			currentPosition = direction.shift(currentPosition, menu.getRows());
+			Slot shiftedPos = direction.shift(currentPosition, menu.getRows());
+
+			if(shiftedPos.getRow() >= menu.getRows() || shiftedPos.getRow() < 0
+							|| shiftedPos.getColumn() > 8 || shiftedPos.getColumn() < 0) {
+				return null;
+			}
+
+			currentPosition = shiftedPos;
 		}
 
 		//when it becomes empty
 		return currentPosition;
 	}
 
-	public Slot nextSlot() {
+	public @Nullable Slot nextSlot() {
 		return nextSlot(false);
 	}
 
