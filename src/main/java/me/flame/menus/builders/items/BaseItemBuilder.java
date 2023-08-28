@@ -1,7 +1,7 @@
 package me.flame.menus.builders.items;
 
-import lombok.val;
 import me.flame.menus.items.MenuItem;
+
 import me.flame.menus.util.VersionHelper;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -10,15 +10,16 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
+//changed
 @SuppressWarnings({ "unchecked", "unused" })
-public class BaseItemBuilder<B extends BaseItemBuilder<B>> {
+public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     final ItemStack item;
     ItemMeta meta;
     private final boolean hasNoItemMeta;
@@ -123,7 +124,7 @@ public class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     public B setDamage(int d) {
         if (this.hasNoItemMeta) return (B) this;
         if (meta instanceof Damageable) {
-            val damageable = ((Damageable) meta);
+            Damageable damageable = ((Damageable) meta);
             damageable.damage(d);
         }
         return (B) this;
@@ -139,8 +140,8 @@ public class BaseItemBuilder<B extends BaseItemBuilder<B>> {
         return new MenuItem(item, null);
     }
 
-    public MenuItem buildItem(@Nullable Consumer<InventoryClickEvent> clickAction) {
+    public MenuItem buildItem(Consumer<InventoryClickEvent> event) {
         this.item.setItemMeta(meta);
-        return new MenuItem(item, clickAction);
+        return new MenuItem(item, event);
     }
 }
