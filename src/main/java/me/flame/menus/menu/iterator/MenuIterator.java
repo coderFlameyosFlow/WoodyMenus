@@ -104,7 +104,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
                 if (oldCol < 9 && oldRow == maxRows) {
                     oldCol++;
-                    oldRow = 0;
+                    oldRow = 1;
                 } else {
                     oldRow++;
                 }
@@ -117,8 +117,8 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int row = oldPos.getRow();
-                if (row < 0) {
+                int row = oldPos.getRow() + 1;
+                if (row < 1) {
                     row = oldPos.getRow();
                 }
                 return new Slot(row, oldPos.getColumn());
@@ -128,9 +128,9 @@ public final class MenuIterator implements Iterator<MenuItem> {
         DOWNWARDS_ONLY {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int row = oldPos.getRow()+1;
-                if(row > maxRows) {
-                    row = oldPos.getRow();
+                int row = oldPos.getRow() + 1;
+                if (row > maxRows) {
+                    row = 6;
                 }
                 return new Slot(row, oldPos.getColumn());
             }
@@ -140,21 +140,21 @@ public final class MenuIterator implements Iterator<MenuItem> {
         RIGHT_ONLY {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int col = oldPos.getColumn()+1;
-                if(col > 8) {
-                    col = oldPos.getColumn();
+                int col = oldPos.getColumn() + 1;
+                if (col > 9) {
+                    col = 9;
                 }
                 return new Slot(oldPos.getRow(), col);
             }
         },
 
 
-        LEFT_ONLY{
+        LEFT_ONLY {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int col = oldPos.getColumn()-1;
-                if(col < 0) {
-                    col = oldPos.getColumn();
+                int col = oldPos.getColumn() - 1;
+                if (col < 1) {
+                    col = 1;
                 }
                 return new Slot(oldPos.getRow(), col);
             }
