@@ -4,46 +4,52 @@ import me.flame.menus.items.MenuItem;
 
 import lombok.val;
 
+import me.flame.menus.menu.BaseMenu;
+
 import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")
 public final class MenuFiller {
-    private final Inventory menu;
-    private final int size;
+    private final BaseMenu<?> menu;
 
-    MenuFiller(@NotNull Inventory menu) {
+    MenuFiller(@NotNull BaseMenu<?> menu) {
         this.menu = menu;
-        this.size = menu.getSize();
     }
 
-    public static MenuFiller from(@NotNull Inventory menu) {
+    @Contract(value = "_ -> new", pure = true)
+    public static @NotNull MenuFiller from(@NotNull BaseMenu<?> menu) {
         return new MenuFiller(menu);
     }
 
-    public void fillEmptySlots(Material borderMaterial) {
-        val itemStack = new ItemStack(borderMaterial);
+    public void fill(Material borderMaterial) {
+        final int size = menu.getSize();
+
         for (int i = 0; i < size; i++) {
             val item = menu.getItem(i);
             if (item == null || item.getType() == Material.AIR) {
-                menu.setItem(i, itemStack);
+                menu.setItem(i, new ItemStack(borderMaterial));
             }
         }
     }
 
-    public void fillEmptySlots(@NotNull MenuItem borderMaterial) {
+    public void fill(@NotNull MenuItem menuItem) {
+        final int size = menu.getSize();
+
         for (int i = 0; i < size; i++) {
             val item = menu.getItem(i);
             if (item == null || item.getType() == Material.AIR) {
-                menu.setItem(i, borderMaterial.getItemStack());
+                menu.setItem(i, menuItem.getItemStack());
             }
         }
     }
 
-    public void fillEmptySlots(ItemStack itemStack) {
+    public void fill(ItemStack itemStack) {
+        final int size = menu.getSize();
+
         for (int i = 0; i < size; i++) {
             val item = menu.getItem(i);
             if (item == null || item.getType() == Material.AIR) {
