@@ -10,10 +10,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.EnumSet;
 import java.util.function.Consumer;
 
+//changed
+
 @SuppressWarnings("unused")
 public abstract class BaseBuilder<G, B extends BaseBuilder<G, B>> {
     protected String title;
     protected int rows;
+    protected MenuType type = MenuType.CHEST;
     protected final EnumSet<Modifier> modifiers;
     protected Consumer<G> menuConsumer;
 
@@ -31,6 +34,11 @@ public abstract class BaseBuilder<G, B extends BaseBuilder<G, B>> {
     public B rows(int rows) {
         checkRows(rows);
         this.rows = rows;
+        return (B) this;
+    }
+
+    public B type(MenuType type) {
+        this.type = type;
         return (B) this;
     }
 
@@ -56,6 +64,8 @@ public abstract class BaseBuilder<G, B extends BaseBuilder<G, B>> {
     public void setMenuConsumer(@NonNull Consumer<G> menuConsumer) {
         this.menuConsumer = menuConsumer;
     }
+
+    public abstract G create();
 
     protected void checkRows(int rows) {
         if (rows <= 0) throw new IllegalArgumentException("Rows must be greater than 0");
