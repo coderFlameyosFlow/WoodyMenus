@@ -13,7 +13,9 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -29,16 +31,15 @@ public final class SkullBuilder extends BaseItemBuilder<SkullBuilder> {
     static {
         Field field;
         try {
-            field = SkullUtil.skull()
-                             .getItemMeta()
-                             .getClass()
-                             .getDeclaredField("profile");
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            Class<?> itemMetaClass = Objects.requireNonNull(SkullUtil.skull().getItemMeta())
+                    .getClass();
+            field = itemMetaClass.getDeclaredField("profile");
             field.setAccessible(true);
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().log(Level.SEVERE, "Failed to get profile field", e);
             field = null;
         }
-
         PROFILE_FIELD = field;
     }
 
