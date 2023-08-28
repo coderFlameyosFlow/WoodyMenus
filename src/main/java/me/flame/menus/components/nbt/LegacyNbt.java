@@ -11,15 +11,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
+// changed
+
 /**
  * Class to set / get NBT tags from items.
- * I hate this class.
+ * I hate this class. I hate it. I hate it.
  */
 public final class LegacyNbt implements NbtWrapper {
-
     public static final String PACKAGE_NAME = Bukkit.getServer().getClass().getPackage().getName();
     public static final String NMS_VERSION = PACKAGE_NAME.substring(PACKAGE_NAME.lastIndexOf(46) + 1);
-
     private static Method getStringMethod;
     private static Method setStringMethod;
     private static Method setBooleanMethod;
@@ -29,23 +29,28 @@ public final class LegacyNbt implements NbtWrapper {
     private static Method removeTagMethod;
     private static Method asNMSCopyMethod;
     private static Method asBukkitCopyMethod;
-    
+
     private static final Material AIR = Material.AIR;
 
     private static Constructor<?> nbtCompoundConstructor;
 
     static {
         try {
-            getStringMethod = Objects.requireNonNull(getNMSClass("NBTTagCompound")).getMethod("getString", String.class);
-            removeTagMethod = Objects.requireNonNull(getNMSClass("NBTTagCompound")).getMethod("remove", String.class);
-            setStringMethod = Objects.requireNonNull(getNMSClass("NBTTagCompound")).getMethod("setString", String.class, String.class);
-            setBooleanMethod = Objects.requireNonNull(getNMSClass("NBTTagCompound")).getMethod("setBoolean", String.class, boolean.class);
-            hasTagMethod = Objects.requireNonNull(getNMSClass("ItemStack")).getMethod("hasTag");
-            getTagMethod = Objects.requireNonNull(getNMSClass("ItemStack")).getMethod("getTag");
-            setTagMethod = Objects.requireNonNull(getNMSClass("ItemStack")).getMethod("setTag", getNMSClass("NBTTagCompound"));
-            nbtCompoundConstructor = Objects.requireNonNull(getNMSClass("NBTTagCompound")).getDeclaredConstructor();
-            asNMSCopyMethod = Objects.requireNonNull(getCraftItemStackClass()).getMethod("asNMSCopy", ItemStack.class);
-            asBukkitCopyMethod = Objects.requireNonNull(getCraftItemStackClass()).getMethod("asBukkitCopy", getNMSClass("ItemStack"));
+            Class<?> nbtTag = Objects.requireNonNull(getNMSClass("NBTTagCompound"));
+            getStringMethod = nbtTag.getMethod("getString", String.class);
+            removeTagMethod = nbtTag.getMethod("remove", String.class);
+            setStringMethod = nbtTag.getMethod("setString", String.class, String.class);
+            setBooleanMethod = nbtTag.getMethod("setBoolean", String.class, boolean.class);
+
+            Class<?> craftItemStack = Objects.requireNonNull(getNMSClass("ItemStack"));
+            hasTagMethod = craftItemStack.getMethod("hasTag");
+            getTagMethod = craftItemStack.getMethod("getTag");
+            setTagMethod = craftItemStack.getMethod("setTag", nbtTag);
+            nbtCompoundConstructor = nbtTag.getDeclaredConstructor();
+
+            Class<?> craftItemStackClass = Objects.requireNonNull(getCraftItemStackClass());
+            asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
+            asBukkitCopyMethod = craftItemStackClass.getMethod("asBukkitCopy", craftItemStack);
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
