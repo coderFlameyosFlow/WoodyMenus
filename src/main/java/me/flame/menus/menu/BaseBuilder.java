@@ -10,8 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.EnumSet;
 import java.util.function.Consumer;
 
-//changed
-
 @SuppressWarnings("unused")
 public abstract class BaseBuilder<G, B extends BaseBuilder<G, B>> {
     protected String title;
