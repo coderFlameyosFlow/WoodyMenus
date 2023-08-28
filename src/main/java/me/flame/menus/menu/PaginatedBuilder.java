@@ -30,9 +30,13 @@ public class PaginatedBuilder extends BaseBuilder<PaginatedMenu, PaginatedBuilde
      * @return A new {@link PaginatedMenu}
      */
     @NotNull
+    @Override
     @Contract(" -> new")
     public PaginatedMenu create() {
-        final PaginatedMenu menu = new PaginatedMenu(rows, pageSize, title, modifiers);
+        checkRows(rows);
+        final PaginatedMenu menu = type == MenuType.CHEST
+                ? new PaginatedMenu(rows, pageSize, title, modifiers)
+                : new PaginatedMenu(type, pageSize, title, modifiers);
         if (menuConsumer != null) menuConsumer.accept(menu);
         return menu;
     }
