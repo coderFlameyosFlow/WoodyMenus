@@ -1,6 +1,7 @@
 package me.flame.menus.items;
 
 import me.flame.menus.components.nbt.ItemNbt;
+import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -24,8 +25,8 @@ import java.util.function.Consumer;
  *          ...
  *      });
  *
- *      // implementing a new itemStack:
- *      menu.addItem(new ItemBuilder(itemStack, 2) // 2 is the amount of items you get from this "ItemBuilder"
+ *      // implementing a new MenuItem:
+ *      menu.addItem(ItemBuilder.of(itemStack, 2) // 2 is the amount of items you get from this "ItemBuilder"
  *                                  .setName(...).setLore(...)
  *                                  .buildItem(() -> ...);
  *      // the lambda (Consumer) at ItemBuilder#buildItem(Consumer) is optional and you do not have to provide an action, you can use ItemBuilder#buildItem()
@@ -34,18 +35,12 @@ import java.util.function.Consumer;
 @SuppressWarnings("unused")
 public final class MenuItem {
     private @Nullable Consumer<InventoryClickEvent> clickAction;
-
-    public void setItemStack(ItemStack itemStack) {
-        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());;
-
-    }
-
     private ItemStack itemStack;
     private final UUID uuid = UUID.randomUUID();
 
     public MenuItem(ItemStack itemStack, @Nullable Consumer<InventoryClickEvent> action) {
         Objects.requireNonNull(itemStack);
-        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());;
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
         this.clickAction = action;
     }
 
@@ -68,5 +63,13 @@ public final class MenuItem {
 
     public UUID getUniqueId() {
         return uuid;
+    }
+
+    public void setItemStack(ItemStack itemStack) {
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
+    }
+
+    public Material getType() {
+        return itemStack.getType();
     }
 }
