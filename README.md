@@ -113,7 +113,7 @@ This library is hosted on Jitpack.
 <dependency>
     <groupId>com.github.coderFlameyosFlow</groupId>
     <artifactId>WoodyMenus</artifactId>
-    <version>1.1.3</version>
+    <version>LATEST</version>
 </dependency>
 ```
 or gradle (kotlin) alternative:
@@ -123,9 +123,11 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.coderFlameyosFlow:WoodyMenus:1.1.3")
+    implementation("com.github.coderFlameyosFlow:WoodyMenus:LATEST")
 }
 ```
+
+### CHANGE `LATEST` TO THE LATEST RELEASE.
 
 Example usage:
 ```java
