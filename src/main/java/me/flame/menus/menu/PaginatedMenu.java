@@ -38,6 +38,18 @@ public class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         this.currentPage = new LinkedHashMap<>(inventorySize);
     }
 
+    PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers, boolean colorize) {
+        super(type, title, modifiers, colorize);
+        this.pageSize = pageSize;
+        this.currentPage = new LinkedHashMap<>(9);
+    }
+
+    PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
+        super(type, title, modifiers, true);
+        this.pageSize = pageSize;
+        this.currentPage = new LinkedHashMap<>(9);
+    }
+
     /**
      * Get an optional item from the page
      * @return an optional containing an item or empty optional
