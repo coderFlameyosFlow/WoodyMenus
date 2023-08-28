@@ -1,12 +1,14 @@
 package me.flame.menus.menu;
 
+import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
-
 import lombok.val;
+
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.fillers.BorderFiller;
 import me.flame.menus.menu.fillers.MenuFiller;
+import me.flame.menus.menu.iterator.MenuIterator;
 import me.flame.menus.modifiers.Modifier;
 
 import org.bukkit.Bukkit;
@@ -24,30 +26,30 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
 
-@SuppressWarnings({
-    "unused",
-    "unchecked",
-    "UnusedReturnValue",
-    "BooleanMethodIsAlwaysInverted"
-})
-public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
+@SuppressWarnings({ "unused", "BooleanMethodIsAlwaysInverted",
+                    "unchecked", "UnusedReturnValue" })
+public abstract class BaseMenu<M extends BaseMenu<M>>
+        implements InventoryHolder, Iterable<MenuItem> {
     protected @Getter Inventory inventory;
 
-    protected @Getter int rows;
+    protected @Getter int rows = 1;
     protected @Getter int size;
     private @Getter String title;
     protected @Getter boolean updating;
 
     private static final Material AIR = Material.AIR;
+    private final MenuType type;
+    private @Getter @Setter boolean dynamicSizing = false;
 
     private final EnumSet<Modifier> modifiers;
     protected final Map<Integer, MenuItem> itemMap;
 
-    private @Getter BorderFiller borderFiller;
-    private @Getter MenuFiller menuFiller;
+    private final @Getter BorderFiller borderFiller;
+    private final @Getter MenuFiller menuFiller;
     private @Nullable @Getter @Setter Consumer<InventoryClickEvent> outsideClickAction;
     private @Nullable @Getter @Setter Consumer<InventoryClickEvent> bottomClickAction;
     private @Nullable @Getter @Setter Consumer<InventoryClickEvent> topClickAction;
@@ -59,18 +61,85 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
     BaseMenu(int rows, String title, EnumSet<Modifier> modifiers) {
         this(rows, title, modifiers, true);
     }
+    BaseMenu(MenuType type, String title, EnumSet<Modifier> modifiers) {
+        this(type, title, modifiers, true);
+    }
 
     BaseMenu(int rows, String title, EnumSet<Modifier> modifiers, boolean colorize) {
+        this.type = MenuType.CHEST;
         this.modifiers = modifiers;
         this.rows = rows;
-        this.title = colorize ? translateAlternateColorCodes('&', title)
-                              : title;
+        this.title = colorize ? translateAlternateColorCodes('&', title) : title;
         this.size = rows * 9;
         this.itemMap = new LinkedHashMap<>(54);
         this.inventory = Bukkit.createInventory(this, size, title);
 
-        this.borderFiller = BorderFiller.from(inventory);
-        this.menuFiller = MenuFiller.from(inventory);
+        this.borderFiller = BorderFiller.from(this);
+        this.menuFiller = MenuFiller.from(this);
+    }
+
+    BaseMenu(@NotNull MenuType type, String title, EnumSet<Modifier> modifiers, boolean colorize) {
+        this.type = type;
+        this.modifiers = modifiers;
+        this.title = colorize ? translateAlternateColorCodes('&', title) : title;
+        this.size = type.getLimit();
+        this.itemMap = new LinkedHashMap<>(size);
+        this.inventory = Bukkit.createInventory(this, type.getType(), title);
+
+        this.borderFiller = BorderFiller.from(this);
+        this.menuFiller = MenuFiller.from(this);
+    }
+
+    /**
+     * Get a LIST iterator of the items in the menu
+     * @return the list iterator
+     */
+    public MenuIterator iterator() {
+        return new MenuIterator(0, 0, MenuIterator.IterationDirection.HORIZONTAL, this);
+    }
+
+    /**
+     * Get a LIST iterator of the items in the menu
+     * @param direction the direction of the iteration
+     * @return the list iterator
+     */
+    public MenuIterator iterator(MenuIterator.IterationDirection direction) {
+        return new MenuIterator(0, 0, direction, this);
+    }
+
+    /**
+     * Get a stream loop of the items in the menu
+     * @return the stream
+     */
+    public Stream<MenuItem> stream() {
+        return itemMap.values().stream();
+    }
+
+    /**
+     * Get a parallel stream loop of the items in the menu
+     * @apiNote use this if you want to do things in parallel, and you're sure of how to use it, else it might even get slower than the normal .stream()
+     * @return the stream
+     */
+    public Stream<MenuItem> parallelStream() {
+        return itemMap.values().parallelStream();
+    }
+
+    /**
+     * Loop through the items in the menu (aka everything from "itemMap.values()")
+     * <p>
+     * It continues until there are no elements left or the action throws an exception
+     * @param action The action to be performed for each element
+     */
+    public void forEach(Consumer<? super MenuItem> action) {
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            action.accept(entry.getValue());
+        }
+    }
+
+    private void recreateInventory() {
+        this.rows++;
+        this.size = rows * 9;
+        inventory = Bukkit.createInventory(this, size, title);
     }
 
     /**
@@ -82,9 +151,11 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      */
     public M addItem(ItemStack item, boolean shouldUpdate) {
         int size = itemMap.size();
-        if (size >= this.size) return (M) this;
+        if (size >= this.size) {
+            if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
+            recreateInventory();
+        }
         itemMap.put(size + 1, new MenuItem(item, null));
-
         if (shouldUpdate) update();
         return (M) this;
     }
@@ -105,8 +176,14 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M addItem(MenuItem @NotNull ... items) {
-        for (val item : items)
-            this.itemMap.put(this.itemMap.size(), item);
+        for (val item : items) {
+            int size = this.itemMap.size();
+            if (size >= this.size) {
+                if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
+                recreateInventory();
+            }
+            this.itemMap.put(size + 1, item);
+        }
         return (M) this;
     }
 
@@ -116,8 +193,11 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M addItem(MenuItem item, boolean update) {
-        int size = itemMap.size();
-        if (size >= this.size) return (M) this;
+        int size = this.itemMap.size();
+        if (size >= this.size) {
+            if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
+            recreateInventory();
+        }
         itemMap.put(size + 1, item);
         if (update) update();
         return (M) this;
@@ -130,7 +210,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(ItemStack item, @NotNull Slot slot, boolean update) {
+    public M setItem(@NotNull Slot slot, ItemStack item, boolean update) {
         itemMap.put(slot.getSlot(), new MenuItem(item, null));
         if (update) update();
         return (M) this;
@@ -138,10 +218,11 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
 
     /**
      * Add the itemStack to the list of items in the menu.
+     * @param slot the row and col of the inventory
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(MenuItem item, @NotNull Slot slot, boolean update) {
+    public M setItem(@NotNull Slot slot, MenuItem item, boolean update) {
         itemMap.put(slot.getSlot(), item);
         if (update) update();
         return (M) this;
@@ -154,7 +235,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(ItemStack item, int slot, boolean update) {
+    public M setItem(int slot, ItemStack item, boolean update) {
         itemMap.put(slot, new MenuItem(item, null));
         if (update) update();
         return (M) this;
@@ -165,7 +246,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(MenuItem item, int slot, boolean update) {
+    public M setItem(int slot, MenuItem item, boolean update) {
         itemMap.put(slot, item);
         if (update) update();
         return (M) this;
@@ -177,9 +258,9 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M removeItem(@NotNull final MenuItem item, boolean update) {
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            if (!item.equals(itemTwo.getValue())) continue;
-            itemMap.remove(itemTwo.getKey());
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            if (!item.equals(entry.getValue())) continue;
+            itemMap.remove(entry.getKey());
             if (update) update();
             break;
         }
@@ -192,10 +273,9 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M removeItem(@NotNull final ItemStack itemStack, boolean update) {
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            val value = itemTwo.getValue();
-            if (!value.getItemStack().equals(itemStack)) continue;
-            itemMap.remove(itemTwo.getKey());
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            if (!entry.getValue().getItemStack().equals(itemStack)) continue;
+            itemMap.remove(entry.getKey());
             if (update) update();
             break;
         }
@@ -210,9 +290,12 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M addItem(ItemStack item) {
-        int size = itemMap.size();
-        if (size >= this.size) return (M) this;
-        itemMap.put(size, new MenuItem(item, null));
+        int size = this.itemMap.size();
+        if (size >= this.size) {
+            if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
+            recreateInventory();
+        }
+        itemMap.put(size + 1, new MenuItem(item, null));
         return (M) this;
     }
 
@@ -222,8 +305,11 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M addItem(MenuItem item) {
-        int size = itemMap.size();
-        if (size >= this.size) return (M) this;
+        int size = this.itemMap.size();
+        if (size >= this.size) {
+            if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
+            recreateInventory();
+        }
         itemMap.put(size, item);
         return (M) this;
     }
@@ -235,7 +321,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(ItemStack item, @NotNull Slot slot) {
+    public M setItem(@NotNull Slot slot, ItemStack item) {
         itemMap.put(slot.getSlot(), new MenuItem(item, null));
         return (M) this;
     }
@@ -245,7 +331,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(MenuItem item, @NotNull Slot slot) {
+    public M setItem(@NotNull Slot slot, MenuItem item) {
         itemMap.put(slot.getSlot(), item);
         return (M) this;
     }
@@ -257,7 +343,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(ItemStack item, int slot) {
+    public M setItem(int slot, ItemStack item) {
         itemMap.put(slot, new MenuItem(item, null));
         return (M) this;
     }
@@ -267,7 +353,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @param item the itemStack to add
      * @return the object for chaining
      */
-    public M setItem(MenuItem item, int slot) {
+    public M setItem(int slot, MenuItem item) {
         itemMap.put(slot, item);
         return (M) this;
     }
@@ -278,9 +364,9 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M removeItem(@NotNull final MenuItem item) {
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            if (!item.equals(itemTwo.getValue())) continue;
-            itemMap.remove(itemTwo.getKey());
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            if (!item.equals(entry.getValue())) continue;
+            itemMap.remove(entry.getKey());
             break;
         }
         return (M) this;
@@ -292,10 +378,9 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the object for chaining
      */
     public M removeItem(@NotNull final ItemStack itemStack) {
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            val value = itemTwo.getValue();
-            if (!itemStack.equals(value.getItemStack())) continue;
-            itemMap.remove(itemTwo.getKey());
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            if (!itemStack.equals(entry.getValue().getItemStack())) continue;
+            itemMap.remove(entry.getKey());
             break;
         }
         return (M) this;
@@ -307,11 +392,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the itemStack or null
      */
     public @Nullable MenuItem getItem(int i) {
-        try {
-            return itemMap.get(i);
-        } catch (IndexOutOfBoundsException e) {
-            return null;
-        }
+        return itemMap.get(i);
     }
 
     /**
@@ -324,11 +405,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the optional itemStack or an empty optional
      */
     public Optional<MenuItem> getOptionalItem(int i) {
-        try {
-            return Optional.ofNullable(itemMap.get(i));
-        } catch (IndexOutOfBoundsException e) {
-            return Optional.empty();
-        }
+        return Optional.ofNullable(itemMap.get(i));
     }
 
     /**
@@ -337,11 +414,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the itemStack or null
      */
     public @Nullable MenuItem getItem(@NotNull Slot slot) {
-        try {
-            return itemMap.get(slot.getSlot());
-        } catch (IndexOutOfBoundsException e) {
-            return null;
-        }
+        return itemMap.get(slot.getSlot());
     }
 
     /**
@@ -354,11 +427,11 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the optional itemStack or an empty optional
      */
     public Optional<MenuItem> getOptionalItem(@NotNull Slot slot) {
-        try {
-            return Optional.ofNullable(itemMap.get(slot.getSlot()));
-        } catch (IndexOutOfBoundsException e) {
-            return Optional.empty();
-        }
+        return Optional.ofNullable(itemMap.get(slot.getSlot()));
+    }
+
+    public boolean hasItem(@NotNull Slot slot) {
+        return itemMap.get(slot.getSlot()) != null;
     }
 
     /**
@@ -371,8 +444,8 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the optional itemStack or an empty optional
      */
     public Optional<MenuItem> getOptionalItem(Predicate<MenuItem> itemDescription) {
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            val value = itemTwo.getValue();
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            val value = entry.getValue();
             if (!itemDescription.test(value)) continue;
             return Optional.of(value);
         }
@@ -385,8 +458,8 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * @return the itemStack or null
      */
     public @Nullable MenuItem getItem(Predicate<MenuItem> itemDescription) {
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            val value = itemTwo.getValue();
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            val value = entry.getValue();
             if (!itemDescription.test(value)) continue;
             return value;
         }
@@ -409,10 +482,10 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      */
     public M removeItemStacks(@NotNull final List<ItemStack> itemStacks) {
         Set<ItemStack> set = new HashSet<>(itemStacks);
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            val itemStack = itemTwo.getValue().getItemStack();
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            val itemStack = entry.getValue().getItemStack();
             if (!set.contains(itemStack)) continue;
-            itemMap.remove(itemTwo.getKey());
+            itemMap.remove(entry.getKey());
         }
         return (M) this;
     }
@@ -433,10 +506,10 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      */
     public M removeItems(@NotNull final List<MenuItem> itemStacks) {
         Set<MenuItem> set = new HashSet<>(itemStacks);
-        for (Map.Entry<Integer, MenuItem> itemTwo : this.itemMap.entrySet()) {
-            val value = itemTwo.getValue();
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+            val value = entry.getValue();
             if (!set.contains(value)) continue;
-            itemMap.remove(itemTwo.getKey());
+            itemMap.remove(entry.getKey());
         }
         return (M) this;
     }
@@ -445,7 +518,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      * Add the specified items to the inventory.
      * @param expandIfFull whether to expand the inventory to add the un-added items or not
      * @param items the items to add to the inventory
-     * @apiNote the expand might fail if the inventory is at 6 rows (at maximum capacity),
+     * @apiNote the expand might fail if the inventory is at 6 rows (at maximum capacity) or the type is not InventoryType.CHEST,
      * and the rest of the items will not be added.
      * @return the object for chaining
      */
@@ -464,31 +537,25 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
             }
         }
 
-        if (!expandIfFull || notAddedItems.isEmpty() || this.rows >= 6) return (M) this;
-        this.rows++;
-        this.size = rows * 9;
-
-        this.inventory = Bukkit.createInventory(this, this.size, this.title);
-        this.borderFiller = BorderFiller.from(inventory);
-        this.menuFiller = MenuFiller.from(inventory);
-
+        if (!expandIfFull || notAddedItems.isEmpty()
+                || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
         final int size = notAddedItems.size();
-        MenuItem[] remainingItems = new MenuItem[size];
+        recreateInventory();
 
         /*
-         *  "
+         *  """
          *   *  surely there's something wrong I can feel it,
          *   *  but no one knows I know there's a problem with this line.
          *   *  please just trust my gut. don't do this, it's bad quality!
          *   *  your code can & will be ruined, and your code will never work!!!
-         *  "
+         *  """
          *      - Best IDE, Intellij 26/8/2023 @ Saturday @ 6:32am
          *              (while I was staying up and my body
          *               was begging me to go to sleep)
          */
         @SuppressWarnings("DataFlowIssue")
         final MenuItem[] newItems = (MenuItem[]) notAddedItems.toArray();
-
+        MenuItem[] remainingItems = new MenuItem[size];
         System.arraycopy(newItems, 0, remainingItems, 0, size);
         return this.addItem(true, remainingItems);
     }
@@ -512,7 +579,9 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
      */
     public M updateTitle(String title) {
         String colorizedTitle = translateAlternateColorCodes('&', title);
-        Inventory updatedInventory = Bukkit.createInventory(this, size, colorizedTitle);
+        Inventory updatedInventory = type == MenuType.CHEST
+                ? Bukkit.createInventory(this, size, colorizedTitle)
+                : Bukkit.createInventory(this, type.getType(), colorizedTitle);
         this.title = colorizedTitle;
         this.inventory = updatedInventory;
 
@@ -524,18 +593,16 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
     }
 
     protected void recreateItems() {
-        int itemsLength = itemMap.size(), i = 0;
+        int itemsLength = itemMap.size();
         if (itemsLength == 0) return;
 
-        // while instead of for to make sure it can fill up empty slots
-        // if it works don't change it.
-        while (i <= itemsLength) {
+        for (int i = 0; i <= itemsLength; i++) {
             ItemStack item = itemMap.get(i).getItemStack();
             if (item == null || item.getType() == AIR) {
-                i++; continue;
+                inventory.setItem(i, null);
+                continue;
             }
             inventory.setItem(i, item);
-            i++;
         }
     }
 
@@ -549,7 +616,7 @@ public class BaseMenu<M extends BaseMenu<M>> implements InventoryHolder {
         if (entity.isSleeping()) return (M) this;
 
         this.updating = true;
-        update();
+        recreateItems();
         this.updating = false;
 
         entity.openInventory(inventory);
