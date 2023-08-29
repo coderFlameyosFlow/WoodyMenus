@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  *
@@ -56,12 +57,18 @@ public final class MenuIterator implements Iterator<MenuItem> {
             currentPosition = shiftedPos;
         }
 
-        //when it becomes empty
+        // when it becomes empty
         return currentPosition;
     }
 
     public @Nullable Slot nextSlot() {
-        return nextSlot(false);
+        Slot newPos = direction.shift(currentPosition, menu.getRows());
+        if (newPos.getRow() >= menu.getRows() || newPos.getRow() < 1
+                || newPos.getColumn() > 9 || newPos.getColumn() < 1) {
+            return null;
+        }
+        currentPosition = newPos;
+        return newPos;
     }
 
     @Override
@@ -72,12 +79,13 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
     @Override
     public MenuItem next() {
-        return menu.getItem(nextSlot());
+        Slot slot = nextSlot(false);
+        if (slot == null)
+            throw new NoSuchElementException("Used MenuIterator#next() but no more items to iterate over");
+        return menu.getItem(slot);
     }
 
     public enum IterationDirection {
-
-
         HORIZONTAL() {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
@@ -117,7 +125,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int row = oldPos.getRow() + 1;
+                int row = oldPos.getRow() - 1;
                 if (row < 1) {
                     row = oldPos.getRow();
                 }
@@ -130,7 +138,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
             Slot shift(Slot oldPos, int maxRows) {
                 int row = oldPos.getRow() + 1;
                 if (row > maxRows) {
-                    row = 6;
+                    row = oldPos.getRow();
                 }
                 return new Slot(row, oldPos.getColumn());
             }
@@ -140,21 +148,21 @@ public final class MenuIterator implements Iterator<MenuItem> {
         RIGHT_ONLY {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int col = oldPos.getColumn() + 1;
+                int col = oldPos.getColumn()+1;
                 if (col > 9) {
-                    col = 9;
+                    col = oldPos.getColumn();
                 }
                 return new Slot(oldPos.getRow(), col);
             }
         },
 
 
-        LEFT_ONLY {
+        LEFT_ONLY{
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int col = oldPos.getColumn() - 1;
+                int col = oldPos.getColumn()-1;
                 if (col < 1) {
-                    col = 1;
+                    col = oldPos.getColumn();
                 }
                 return new Slot(oldPos.getRow(), col);
             }
