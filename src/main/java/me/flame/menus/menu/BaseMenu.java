@@ -610,8 +610,8 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
     protected void recreateItems() {
         if (itemMap.isEmpty()) return;
         for (Map.Entry<Integer, MenuItem> entry : itemMap.entrySet()) {
-        		int i = entry.getKey();
-        		ItemStack item = entry.getValue().getItemStack();
+            int i = entry.getKey() - 1;
+            MenuItem item = entry.getValue().getItemStack();
             if (item == null || item.getType() == AIR) {
                 inventory.setItem(i, null);
                 continue;
