@@ -1,6 +1,5 @@
 package me.flame.menus.menu;
 
-import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
@@ -29,6 +28,8 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
+
+// changed
 
 @SuppressWarnings({ "unused", "BooleanMethodIsAlwaysInverted",
                     "unchecked", "UnusedReturnValue" })
@@ -108,6 +109,20 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
     }
 
     /**
+     * Get a LIST iterator of the items in the menu
+     * @param direction the direction of the iteration
+     * @return the list iterator
+     */
+    public MenuIterator iterator(int startingRow, int startingCol, MenuIterator.IterationDirection direction) {
+        return new MenuIterator(
+                startingRow,
+                startingCol,
+                direction,
+                this
+        );
+    }
+
+    /**
      * Get a stream loop of the items in the menu
      * @return the stream
      */
@@ -122,18 +137,6 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      */
     public Stream<MenuItem> parallelStream() {
         return itemMap.values().parallelStream();
-    }
-
-    /**
-     * Loop through the items in the menu (aka everything from "itemMap.values()")
-     * <p>
-     * It continues until there are no elements left or the action throws an exception
-     * @param action The action to be performed for each element
-     */
-    public void forEach(Consumer<? super MenuItem> action) {
-        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
-            action.accept(entry.getValue());
-        }
     }
 
     private void recreateInventory() {
@@ -310,7 +313,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
             recreateInventory();
         }
-        itemMap.put(size, item);
+        itemMap.put(size + 1, item);
         return (M) this;
     }
 
@@ -432,6 +435,18 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
 
     public boolean hasItem(@NotNull Slot slot) {
         return itemMap.get(slot.getSlot()) != null;
+    }
+
+    public boolean hasItem(int slot) {
+        return itemMap.get(slot) != null;
+    }
+
+    public boolean hasItem(ItemStack item) {
+        return getItem(itemOne -> itemOne.getItemStack().equals(item)) != null;
+    }
+
+    public boolean hasItem(MenuItem item) {
+        return getItem(itemOne -> itemOne.equals(item)) != null;
     }
 
     /**
