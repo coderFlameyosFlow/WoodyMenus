@@ -608,11 +608,10 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
     }
 
     protected void recreateItems() {
-        int itemsLength = itemMap.size();
-        if (itemsLength == 0) return;
-
-        for (int i = 1; i <= itemsLength; i++) {
-            ItemStack item = itemMap.get(i).getItemStack();
+        if (itemMap.isEmpty()) return;
+        for (Map.Entry<Integer, MenuItem> entry : itemMap.entrySet()) {
+        		int i = entry.getKey();
+        		ItemStack item = entry.getValue().getItemStack();
             if (item == null || item.getType() == AIR) {
                 inventory.setItem(i, null);
                 continue;
@@ -620,6 +619,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             inventory.setItem(i, item);
         }
     }
+
 
     /**
      * Open the inventory for the provided player.
