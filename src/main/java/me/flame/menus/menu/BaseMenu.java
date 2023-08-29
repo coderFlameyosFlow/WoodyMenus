@@ -611,7 +611,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
         int itemsLength = itemMap.size();
         if (itemsLength == 0) return;
 
-        for (int i = 0; i <= itemsLength; i++) {
+        for (int i = 1; i <= itemsLength; i++) {
             ItemStack item = itemMap.get(i).getItemStack();
             if (item == null || item.getType() == AIR) {
                 inventory.setItem(i, null);
