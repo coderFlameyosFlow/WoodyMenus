@@ -1,4 +1,7 @@
 # Woody
+### THIS IS THEORETICALLY A FORK OF TRIUMPH-GUI. SHOUT OUT TO TRIUMPHTEAM.
+triumph-gui: https://github.com/TriumphTeam/triumph-gui
+
 No BS High-performance, Minimal and Safe Menus Library
 
 If you need support, Check out the official discord server for help using my plugin/libraries [right here](https://discord.gg/Zj6KBS7UwX)
