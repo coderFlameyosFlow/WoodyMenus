@@ -8,10 +8,12 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  *
- * @author Mqzen
+ * @author Mqzen, FlameyosFlow (Mostly Mqzen)
  * @date 28/8/2023
  *
  * A special class made to iterate over complex menus.
@@ -38,8 +40,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
     public @Nullable Slot nextSlot(boolean emptyOnly) {
         if (!emptyOnly) {
             Slot newPos = direction.shift(currentPosition, menu.getRows());
-            if (newPos.getRow() >= menu.getRows() || newPos.getRow() < 1
-                    || newPos.getColumn() > 9 || newPos.getColumn() < 1) {
+            if (!currentPosition.isSlot()) {
                 return null;
             }
             currentPosition = newPos;
@@ -49,8 +50,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
         while (menu.hasItem(currentPosition)) {
             Slot shiftedPos = direction.shift(currentPosition, menu.getRows());
 
-            if (shiftedPos.getRow() >= menu.getRows() || shiftedPos.getRow() < 1
-                    || shiftedPos.getColumn() > 9 || shiftedPos.getColumn() < 1) {
+            if (!currentPosition.isSlot()) {
                 return null;
             }
 
@@ -63,8 +63,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
     public @Nullable Slot nextSlot() {
         Slot newPos = direction.shift(currentPosition, menu.getRows());
-        if (newPos.getRow() >= menu.getRows() || newPos.getRow() < 1
-                || newPos.getColumn() > 9 || newPos.getColumn() < 1) {
+        if (!newPos.isSlot()) {
             return null;
         }
         currentPosition = newPos;
@@ -73,16 +72,23 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
     @Override
     public boolean hasNext() {
-        return currentPosition.getRow() >= menu.getRows() || currentPosition.getRow() < 1
-                || currentPosition.getColumn() > 9 || currentPosition.getColumn() < 1;
+        return currentPosition.isSlot();
     }
 
     @Override
-    public MenuItem next() {
-        Slot slot = nextSlot(false);
+    public @Nullable MenuItem next() {
+        Slot slot = nextSlot();
         if (slot == null)
             throw new NoSuchElementException("Used MenuIterator#next() but no more items to iterate over");
         return menu.getItem(slot);
+    }
+
+    public @NotNull MenuItem nextNotNull() {
+        return Objects.requireNonNull(next());
+    }
+
+    public Optional<MenuItem> nextOptional() {
+        return Optional.ofNullable(next());
     }
 
     public enum IterationDirection {
@@ -93,12 +99,8 @@ public final class MenuIterator implements Iterator<MenuItem> {
                 int oldCol = oldPos.getColumn();
                 int oldRow = oldPos.getRow();
 
-                if (oldCol == 9 && oldRow < maxRows) {
-                    oldRow++;
-                    oldCol = 1;
-                } else {
-                    oldCol++;
-                }
+                oldCol = (oldCol == 9 && oldRow < maxRows) ? 1 : oldCol + 1;
+                if (oldCol == 1) oldRow++;
 
                 return new Slot(oldRow, oldCol);
             }
@@ -142,13 +144,12 @@ public final class MenuIterator implements Iterator<MenuItem> {
                 }
                 return new Slot(row, oldPos.getColumn());
             }
-
         },
 
         RIGHT_ONLY {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int col = oldPos.getColumn()+1;
+                int col = oldPos.getColumn() + 1;
                 if (col > 9) {
                     col = oldPos.getColumn();
                 }
@@ -157,10 +158,10 @@ public final class MenuIterator implements Iterator<MenuItem> {
         },
 
 
-        LEFT_ONLY{
+        LEFT_ONLY {
             @Override
             Slot shift(Slot oldPos, int maxRows) {
-                int col = oldPos.getColumn()-1;
+                int col = oldPos.getColumn() - 1;
                 if (col < 1) {
                     col = oldPos.getColumn();
                 }
