@@ -29,8 +29,6 @@ import java.util.stream.Stream;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
 
-// changed
-
 @SuppressWarnings({ "unused", "BooleanMethodIsAlwaysInverted",
                     "unchecked", "UnusedReturnValue" })
 public abstract class BaseMenu<M extends BaseMenu<M>>
@@ -47,7 +45,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
     private @Getter @Setter boolean dynamicSizing = false;
 
     private final EnumSet<Modifier> modifiers;
-    protected final Map<Integer, MenuItem> itemMap;
+    protected final LinkedHashMap<Integer, MenuItem> itemMap;
 
     private final @Getter BorderFiller borderFiller;
     private final @Getter MenuFiller menuFiller;
@@ -158,7 +156,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
             recreateInventory();
         }
-        itemMap.put(size + 1, new MenuItem(item, null));
+        itemMap.put(size, new MenuItem(item, null));
         if (shouldUpdate) update();
         return (M) this;
     }
@@ -179,13 +177,13 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the object for chaining
      */
     public M addItem(MenuItem @NotNull ... items) {
-        for (val item : items) {
+        for (final MenuItem item : items) {
             int size = this.itemMap.size();
             if (size >= this.size) {
                 if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
                 recreateInventory();
             }
-            this.itemMap.put(size + 1, item);
+            this.itemMap.put(size, item);
         }
         return (M) this;
     }
@@ -201,7 +199,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
             recreateInventory();
         }
-        itemMap.put(size + 1, item);
+        itemMap.put(size, item);
         if (update) update();
         return (M) this;
     }
@@ -214,6 +212,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the object for chaining
      */
     public M setItem(@NotNull Slot slot, ItemStack item, boolean update) {
+        if (!validSlot(slot)) return (M) this;
         itemMap.put(slot.getSlot(), new MenuItem(item, null));
         if (update) update();
         return (M) this;
@@ -226,6 +225,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the object for chaining
      */
     public M setItem(@NotNull Slot slot, MenuItem item, boolean update) {
+        if (!validSlot(slot)) return (M) this;
         itemMap.put(slot.getSlot(), item);
         if (update) update();
         return (M) this;
@@ -298,7 +298,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
             recreateInventory();
         }
-        itemMap.put(size + 1, new MenuItem(item, null));
+        itemMap.put(size, new MenuItem(item, null));
         return (M) this;
     }
 
@@ -313,7 +313,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             if (!dynamicSizing || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
             recreateInventory();
         }
-        itemMap.put(size + 1, item);
+        itemMap.put(size, item);
         return (M) this;
     }
 
@@ -325,6 +325,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the object for chaining
      */
     public M setItem(@NotNull Slot slot, ItemStack item) {
+        if (!validSlot(slot)) return (M) this;
         itemMap.put(slot.getSlot(), new MenuItem(item, null));
         return (M) this;
     }
@@ -335,6 +336,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the object for chaining
      */
     public M setItem(@NotNull Slot slot, MenuItem item) {
+        if (!validSlot(slot)) return (M) this;
         itemMap.put(slot.getSlot(), item);
         return (M) this;
     }
@@ -417,6 +419,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the itemStack or null
      */
     public @Nullable MenuItem getItem(@NotNull Slot slot) {
+        if (!validSlot(slot)) return null;
         return itemMap.get(slot.getSlot());
     }
 
@@ -430,10 +433,12 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @return the optional itemStack or an empty optional
      */
     public Optional<MenuItem> getOptionalItem(@NotNull Slot slot) {
+        if (!validSlot(slot)) return Optional.empty();
         return Optional.ofNullable(itemMap.get(slot.getSlot()));
     }
 
     public boolean hasItem(@NotNull Slot slot) {
+        if (!validSlot(slot)) return false;
         return itemMap.get(slot.getSlot()) != null;
     }
 
@@ -530,53 +535,6 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
     }
 
     /**
-     * Add the specified items to the inventory.
-     * @param expandIfFull whether to expand the inventory to add the un-added items or not
-     * @param items the items to add to the inventory
-     * @apiNote the expand might fail if the inventory is at 6 rows (at maximum capacity) or the type is not InventoryType.CHEST,
-     * and the rest of the items will not be added.
-     * @return the object for chaining
-     */
-    public M addItem(final boolean expandIfFull, @NotNull final MenuItem @NotNull ... items) {
-        int itemsSize = this.itemMap.size();
-        List<MenuItem> notAddedItems = new ArrayList<>(size);
-
-        for (final MenuItem guiItem : items) {
-            for (int slot = 0; slot < size; slot++) {
-                if (this.itemMap.get(slot) != null) {
-                    if (slot != size - 1) continue;
-                    notAddedItems.add(guiItem);
-                }
-                this.itemMap.put(slot, guiItem);
-                break;
-            }
-        }
-
-        if (!expandIfFull || notAddedItems.isEmpty()
-                || this.rows >= 6 || type != MenuType.CHEST) return (M) this;
-        final int size = notAddedItems.size();
-        recreateInventory();
-
-        /*
-         *  """
-         *   *  surely there's something wrong I can feel it,
-         *   *  but no one knows I know there's a problem with this line.
-         *   *  please just trust my gut. don't do this, it's bad quality!
-         *   *  your code can & will be ruined, and your code will never work!!!
-         *  """
-         *      - Best IDE, Intellij 26/8/2023 @ Saturday @ 6:32am
-         *              (while I was staying up and my body
-         *               was begging me to go to sleep)
-         */
-        @SuppressWarnings("DataFlowIssue")
-        final MenuItem[] newItems = (MenuItem[]) notAddedItems.toArray();
-        MenuItem[] remainingItems = new MenuItem[size];
-        System.arraycopy(newItems, 0, remainingItems, 0, size);
-        return this.addItem(true, remainingItems);
-    }
-
-
-    /**
      * Update the inventory which recreates the items on default
      * @return the object for chaining
      */
@@ -609,9 +567,9 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
 
     protected void recreateItems() {
         if (itemMap.isEmpty()) return;
-        for (Map.Entry<Integer, MenuItem> entry : itemMap.entrySet()) {
-            int i = entry.getKey() - 1;
-            ItemStack item = entry.getValue().getItemStack();
+        for (Map.Entry<Integer, MenuItem> entry : this.itemMap.entrySet()) {
+    		int i = entry.getKey();
+    		ItemStack item = entry.getValue().getItemStack();
             if (item == null || item.getType() == AIR) {
                 inventory.setItem(i, null);
                 continue;
@@ -619,7 +577,6 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
             inventory.setItem(i, item);
         }
     }
-
 
     /**
      * Open the inventory for the provided player.
@@ -689,6 +646,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @param itemStack The {@link ItemStack} to replace in the original one in the {@link MenuItem}.
      */
     public void updateItem(@NotNull Slot slot, @NotNull final ItemStack itemStack) {
+        if (!validSlot(slot)) return;
         final int slotNum = slot.getSlot();
         final MenuItem guiItem = itemMap.get(slotNum);
 
@@ -709,6 +667,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
      * @param itemStack The {@link ItemStack} to replace in the original one in the {@link MenuItem}.
      */
     public void updateItem(@NotNull Slot slot, @NotNull final MenuItem itemStack) {
+        if (!validSlot(slot)) return;
         final int slotNum = slot.getSlot();
         final MenuItem guiItem = itemMap.get(slotNum);
 
@@ -719,5 +678,9 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
 
         guiItem.setItemStack(itemStack.getItemStack());
         itemMap.put(slotNum, guiItem);
+    }
+
+    protected boolean validSlot(Slot slot) {
+        return slot.isSlot();
     }
 }
