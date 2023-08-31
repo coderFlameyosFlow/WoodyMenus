@@ -9,9 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-public class VersionHelper {
-    private static final String NMS_VERSION = getNmsVersion();
+// changed
 
+public class VersionHelper {
     // Unbreakable change
     private static final int V1_11 = 1110;
     // Material and components on items change
@@ -24,14 +24,6 @@ public class VersionHelper {
     private static final int V1_12_1 = 1121;
 
     private static final int CURRENT_VERSION = getCurrentVersion();
-
-    private static final boolean IS_PAPER = checkPaper();
-
-    /**
-     * Checks if the version supports Components or not
-     * Spigot always false
-     */
-    public static final boolean IS_COMPONENT_LEGACY = CURRENT_VERSION < V1_16_5 || !IS_PAPER;
 
     /**
      * Checks if the version is lower than 1.13 due to the item changes
@@ -60,21 +52,6 @@ public class VersionHelper {
     public static final boolean IS_CUSTOM_MODEL_DATA = CURRENT_VERSION >= V1_14;
 
     /**
-     * Check if the server has access to the Paper API
-     * Taken from <a href="https://github.com/PaperMC/PaperLib">PaperLib</a>
-     *
-     * @return True if on Paper server (or forks), false anything else
-     */
-    private static boolean checkPaper() {
-        try {
-            Class.forName("com.destroystokyo.paper.PaperConfig");
-            return true;
-        } catch (ClassNotFoundException ignored) {
-            return false;
-        }
-    }
-
-    /**
      * Gets the current server version
      *
      * @return A protocol like number representing the version, for example 1.16.5 - 1165
@@ -86,19 +63,10 @@ public class VersionHelper {
         if (matcher.find()) {
             String version = matcher.group(1).replace(".", "");
             String patch = matcher.group(2);
-            patch = patch == null ? "0" : patch.replace(".", "");;
-            return Integer.parseInt(version + patch);
+            patch = patch == null ? "0" : patch.replace(".", "");
+            return Integer.parseInt(version + patch, 10);
         }
 
         throw new RuntimeException("Could not retrieve server version!");
-    }
-
-    private static String getNmsVersion() {
-        final String version = Bukkit.getServer().getClass().getPackage().getName();
-        return version.substring(version.lastIndexOf('.') + 1);
-    }
-
-    public static Class<?> craftClass(@NotNull final String name) throws ClassNotFoundException {
-        return Class.forName("org.bukkit.craftbukkit." + NMS_VERSION + "." + name);
     }
 }
