@@ -1,6 +1,9 @@
 package me.flame.menus.items;
 
+import lombok.EqualsAndHashCode;
+
 import me.flame.menus.components.nbt.ItemNbt;
+
 import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -25,15 +28,19 @@ import java.util.function.Consumer;
  *          ...
  *      });
  *
- *      // implementing a new MenuItem:
- *      menu.addItem(ItemBuilder.of(itemStack, 2) // 2 is the amount of items you get from this "ItemBuilder"
+ *      // implementing a new itemStack:
+ *      menu.addItem(new ItemBuilder(itemStack, 2) // 2 is the amount of items you get from this "ItemBuilder"
  *                                  .setName(...).setLore(...)
  *                                  .buildItem(() -> ...);
  *      // the lambda (Consumer) at ItemBuilder#buildItem(Consumer) is optional and you do not have to provide an action, you can use ItemBuilder#buildItem()
  * }</pre>
  */
+
+//changed
+
+@EqualsAndHashCode
 @SuppressWarnings("unused")
-public final class MenuItem {
+public final class MenuItem implements Cloneable {
     private @Nullable Consumer<InventoryClickEvent> clickAction;
     private ItemStack itemStack;
     private final UUID uuid = UUID.randomUUID();
@@ -71,5 +78,11 @@ public final class MenuItem {
 
     public Material getType() {
         return itemStack.getType();
+    }
+
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
+    public MenuItem clone() {
+        return new MenuItem(itemStack, clickAction);
     }
 }
