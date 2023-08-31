@@ -27,8 +27,7 @@ public final class BorderFiller {
         final var itemStack = new ItemStack(borderMaterial);
 
         for (int i = 0; i < size; i++) {
-            if ((i < 9 || i >= size - 9) ||
-                (i % 9 == 0 || i % 9 == 8)) menu.setItem(i, itemStack);
+            if (isBorderSlot(i, size)) menu.setItem(i, itemStack);
         }
     }
 
@@ -36,9 +35,8 @@ public final class BorderFiller {
         final int size = menu.getSize();
         final var itemStack = borderMaterial.getItemStack();
 
-        for (int i = 0; i < size; i++) {
-            if ((i < 9 || i >= size - 9) ||
-                (i % 9 == 0 || i % 9 == 8)) menu.setItem(i, itemStack);
+        for (int i = 1; i < size; i++) {
+            if (isBorderSlot(i, size)) menu.setItem(i, itemStack);
         }
     }
 
@@ -46,8 +44,11 @@ public final class BorderFiller {
         final int size = menu.getSize();
 
         for (int i = 0; i < size; i++) {
-            if ((i < 9 || i >= size - 9) ||
-                (i % 9 == 0 || i % 9 == 8)) menu.setItem(i, itemStack);
+            if (isBorderSlot(i, size)) menu.setItem(i, itemStack);
         }
+    }
+
+    private static boolean isBorderSlot(int i, int size) {
+        return (i < 9 || i >= size - 9) || (i % 9 == 0 || i % 9 == 8);
     }
 }
