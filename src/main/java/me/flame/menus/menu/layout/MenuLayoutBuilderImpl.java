@@ -9,6 +9,8 @@ import me.flame.menus.modifiers.Modifier;
 
 import java.util.*;
 
+// changed
+
 public class MenuLayoutBuilderImpl implements MenuLayoutBuilder {
     public final Map<Character, MenuItem> itemMap;
     private final List<MenuItem> items = new ArrayList<>(54);
@@ -22,8 +24,8 @@ public class MenuLayoutBuilderImpl implements MenuLayoutBuilder {
     @Override
     public MenuLayoutBuilder row(String string) {
         int stringsLength = string.length();
-        if (items.size() == 54) {
-            throw new IllegalArgumentException("Attempted to add more than 54 items (max inventory size)");
+        if (items.size() == 53) {
+            throw new IllegalArgumentException("Attempted to add more than 54 (53 if considering 0 index) items (max inventory size)");
         }
         if (stringsLength > MAX_ROW_SIZE) {
             throw new IllegalArgumentException("Too many strings (Temporary.. maybe?), length = "
@@ -34,7 +36,7 @@ public class MenuLayoutBuilderImpl implements MenuLayoutBuilder {
         char[] chars = string.toCharArray();
         int index = 0;
         for (; index != stringsLength; index++) {
-            if (items.size() == 54) {
+            if (items.size() == 53) {
                 throw new IllegalArgumentException("Attempted to add more than 54 items (max inventory size)");
             }
             char character = chars[index];
