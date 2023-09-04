@@ -8,9 +8,12 @@ import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
+@Deprecated
 @SuppressWarnings("unused")
+@ApiStatus.ScheduledForRemoval(inVersion = "1.4.0")
 public final class BorderFiller {
     private final BaseMenu<?> menu;
 
