@@ -1,46 +1,25 @@
-/**
- * MIT License
- * <p>
- * Copyright (c) 2021 TriumphTeam
- * Copyright (c) 2023 FlameyosFlow
- * <p>
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * <p>
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * <p>
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package me.flame.menus.components.nbt;
-
-import me.flame.menus.menu.Menus;
 
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static me.flame.menus.menu.Menus.PLUGIN;
 
 /**
  * Wrapper for compatibility with {@link LegacyNbt}.
  * This ideally wouldn't need exist, but legacy.
+ * @author TriumphTeam
  */
+
 public final class Pdc implements NbtWrapper {
+    private final Plugin plugin;
+    
+    public Pdc(@NotNull final Plugin plugin) {
+        this.plugin = plugin;
+    }
 
     /**
      * Sets a String NBT tag to the an {@link ItemStack}.
@@ -54,7 +33,7 @@ public final class Pdc implements NbtWrapper {
     public ItemStack setString(@NotNull final ItemStack itemStack, final String key, final String value) {
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return itemStack;
-        meta.getPersistentDataContainer().set(new NamespacedKey(PLUGIN, key), PersistentDataType.STRING, value);
+        meta.getPersistentDataContainer().set(new NamespacedKey(plugin, key), PersistentDataType.STRING, value);
         itemStack.setItemMeta(meta);
         return itemStack;
     }
@@ -70,7 +49,7 @@ public final class Pdc implements NbtWrapper {
     public ItemStack removeTag(@NotNull final ItemStack itemStack, final String key) {
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return itemStack;
-        meta.getPersistentDataContainer().remove(new NamespacedKey(PLUGIN, key));
+        meta.getPersistentDataContainer().remove(new NamespacedKey(plugin, key));
         itemStack.setItemMeta(meta);
         return itemStack;
     }
@@ -88,7 +67,7 @@ public final class Pdc implements NbtWrapper {
     public ItemStack setBoolean(@NotNull final ItemStack itemStack, final String key, final boolean value) {
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return itemStack;
-        meta.getPersistentDataContainer().set(new NamespacedKey(PLUGIN, key), PersistentDataType.BYTE, value ? (byte) 1 : 0);
+        meta.getPersistentDataContainer().set(new NamespacedKey(plugin, key), PersistentDataType.BYTE, value ? (byte) 1 : 0);
         itemStack.setItemMeta(meta);
         return itemStack;
     }
@@ -105,6 +84,6 @@ public final class Pdc implements NbtWrapper {
     public String getString(@NotNull final ItemStack itemStack, final String key) {
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta == null) return null;
-        return meta.getPersistentDataContainer().get(new NamespacedKey(PLUGIN, key), PersistentDataType.STRING);
+        return meta.getPersistentDataContainer().get(new NamespacedKey(plugin, key), PersistentDataType.STRING);
     }
 }
