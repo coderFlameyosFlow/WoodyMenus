@@ -1,15 +1,10 @@
 package me.flame.menus.util;
 
-import com.google.common.primitives.Ints;
-import me.flame.menus.exceptions.MenuException;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-
-// changed
 
 public class VersionHelper {
     // Unbreakable change
@@ -57,8 +52,9 @@ public class VersionHelper {
      * @return A protocol like number representing the version, for example 1.16.5 - 1165
      */
     private static int getCurrentVersion() {
-        String bukkitVersion = Bukkit.getBukkitVersion();
-        Matcher matcher = Pattern.compile("(\\d+\\.\\d+)(\\.\\d+)?").matcher(bukkitVersion);
+        Matcher matcher = Pattern
+                .compile("(\\d+\\.\\d+)(\\.\\d+)?")
+                .matcher(Bukkit.getBukkitVersion());
 
         if (matcher.find()) {
             String version = matcher.group(1).replace(".", "");
@@ -67,6 +63,9 @@ public class VersionHelper {
             return Integer.parseInt(version + patch, 10);
         }
 
-        throw new RuntimeException("Could not retrieve server version!");
+        throw new RuntimeException(
+                "Could not retrieve server version!" +
+                "\nFix: Install the server properly or add a WORKING version/jar."
+        );
     }
 }
