@@ -1,28 +1,3 @@
-/**
- * MIT License
- * <p>
- * Copyright (c) 2021 TriumphTeam
- * Copyright (c) 2023 FlameyosFlow
- * <p>
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * <p>
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * <p>
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package me.flame.menus.listeners;
 
 import lombok.val;
@@ -32,6 +7,8 @@ import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.BaseMenu;
 import me.flame.menus.menu.PaginatedMenu;
 
+import me.flame.menus.menu.Result;
+import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -41,13 +18,16 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
+
+// changed
 
 public final class MenuListeners implements Listener {
     private static final EnumSet<InventoryAction> TAKE = EnumSet.of(
@@ -79,13 +59,20 @@ public final class MenuListeners implements Listener {
             InventoryAction.DROP_ALL_CURSOR
     );
 
-    private static final Event.Result denied = Event.Result.DENY;
+    private final Plugin plugin;
+
+    public MenuListeners(Plugin plugin) {
+        this.plugin = plugin;
+    }
+
     private static final InventoryType player = InventoryType.PLAYER;
     private static final InventoryAction otherInv = InventoryAction.MOVE_TO_OTHER_INVENTORY;
+    private static final BukkitScheduler SCHEDULER = Bukkit.getScheduler();
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(final @NotNull InventoryClickEvent event) {
         Inventory inv = event.getInventory();
+
         InventoryHolder holder = inv.getHolder();
         if (!(holder instanceof BaseMenu<?>)) return;
 
@@ -100,9 +87,8 @@ public final class MenuListeners implements Listener {
         }
         Objects.requireNonNull(ci);
 
-        denyIfModifierApplied(event, m, ci, action, ci.getType(), inv.getType());
         executeActions(event, m, inv, ci);
-        executeMenuItem(event, event.getCurrentItem(), m, event.getSlot());
+        executeMenuItem(event, event.getCurrentItem(), ci, inv, action, m, event.getSlot());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -114,19 +100,24 @@ public final class MenuListeners implements Listener {
 
         val rawSlots = event.getRawSlots();
         if (!menu.areItemsPlaceable() || isDraggingOnGui(inventory, rawSlots))
-            event.setResult(denied);
+            event.setResult(Event.Result.DENY);
         val dragAction = menu.getDragAction();
         if (dragAction != null) dragAction.accept(event);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onGuiClose(final @NotNull InventoryCloseEvent event) {
-        val holder = event.getInventory().getHolder();
+    public void onGuiClose(final @NotNull InventoryCloseEvent e) {
+        val holder = e.getInventory().getHolder();
         if (!(holder instanceof BaseMenu<?>)) return;
         val menu = (BaseMenu<?>) holder;
 
+        Result result = Result.allowed();
         val closeAction = menu.getCloseAction();
-        if (!menu.isUpdating() && closeAction != null) closeAction.accept(event);
+        if (!menu.isUpdating() && closeAction != null) closeAction.accept(e, result);
+
+        if (result.equals(Result.denied())) {
+            SCHEDULER.runTaskLater(plugin, () -> menu.open(e.getPlayer()), 1);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -188,33 +179,38 @@ public final class MenuListeners implements Listener {
         else if (defaultClick != null) defaultClick.accept(event);
     }
 
-    private void denyIfModifierApplied(final @NotNull InventoryClickEvent event,
-                                       final @NotNull BaseMenu<?> m,
-                                       final @NotNull Inventory ci,
-                                       final @NotNull InventoryAction action,
-                                       final @NotNull InventoryType ciType,
-                                       final @NotNull InventoryType invType) {
-        boolean unremovable = !m.areItemsRemovable();
-        if ((!m.areItemsPlaceable() && isPlaceItemEvent(ci, action, ciType, invType)) ||
-                (unremovable && isTakeItemEvent(ci, action, ciType, invType)) ||
-                (!m.areItemsSwappable() && isSwapItemEvent(ci, action, ciType, invType)) ||
-                (unremovable && isDropItemEvent(ci, action, invType)) ||
-                (!m.areItemsCloneable() && isOtherEvent(ci, action, invType)))
-            event.setResult(denied);
-    }
-
     private void executeMenuItem(final @NotNull InventoryClickEvent event,
                                  final @Nullable ItemStack it,
+                                 final @NotNull Inventory ci,
+                                 final @NotNull Inventory inv,
+                                 final @NotNull InventoryAction action,
                                  final @NotNull BaseMenu<?> m,
                                  final int num) {
+        if (modifierDetected(m, ci, action, ci.getType(), inv.getType()))
+            event.setResult(Event.Result.DENY);
+
         MenuItem menuItem = (m instanceof PaginatedMenu)
-                ? (m.getOptionalItem(num).orElse(((PaginatedMenu) m).getFromPageItems(num)))
+                ? (m.get(num).orElse(((PaginatedMenu) m).getFromPageItems(num)))
                 : (m.getItem(num));
+
         if (it == null || menuItem == null) return;
         final String nbt = ItemNbt.getString(it, "woody-menu");
         if (nbt == null || !nbt.equals(menuItem.getUniqueId().toString())) return;
 
-        final Consumer<InventoryClickEvent> itemAction = menuItem.getClickAction();
-        if (itemAction != null) itemAction.accept(event);
+        menuItem.click(event);
+    }
+
+    private boolean modifierDetected(
+            BaseMenu<?> m,
+            Inventory ci,
+            InventoryAction action,
+            InventoryType ciType,
+            InventoryType invType) {
+        boolean unremovable = !m.areItemsRemovable();
+        return ((!m.areItemsPlaceable() && isPlaceItemEvent(ci, action, ciType, invType)) ||
+                (unremovable && isTakeItemEvent(ci, action, ciType, invType)) ||
+                (!m.areItemsSwappable() && isSwapItemEvent(ci, action, ciType, invType)) ||
+                (unremovable && isDropItemEvent(ci, action, invType)) ||
+                (!m.areItemsCloneable() && isOtherEvent(ci, action, invType)));
     }
 }
