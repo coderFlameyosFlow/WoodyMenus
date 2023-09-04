@@ -49,30 +49,29 @@ public class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     private int pageSize;
     private int pageNum = 1;
 
-    PaginatedMenu(final int rows, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers, boolean colorize) {
-        super(rows, title, modifiers, colorize);
-        this.pageSize = pageSize;
-        int inventorySize = rows * 9;
-        this.currentPage = new LinkedHashMap<>(inventorySize);
+    public PaginatedMenu(final int rows, final int pageSize, @NotNull final String title) {
+        this(rows, pageSize, title, EnumSet.noneOf(Modifier.class));
     }
 
-    PaginatedMenu(final int rows, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
+    public PaginatedMenu(final int rows, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
         super(rows, title, modifiers, true);
+        this.pageItems = new LinkedHashMap<>(rows * 9);
+        this.pages = new Page[pages];
         this.pageSize = pageSize;
-        int inventorySize = rows * 9;
-        this.currentPage = new LinkedHashMap<>(inventorySize);
     }
 
-    PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers, boolean colorize) {
+    public PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers, boolean colorize) {
         super(type, title, modifiers, colorize);
+        this.pageItems = new LinkedHashMap<>(rows * 9);
+        this.pages = new Page[pages];
         this.pageSize = pageSize;
-        this.currentPage = new LinkedHashMap<>(9);
     }
 
-    PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
+    public PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
         super(type, title, modifiers, true);
+        this.pageItems = new LinkedHashMap<>(rows * 9);
+        this.pages = new Page[pages];
         this.pageSize = pageSize;
-        this.currentPage = new LinkedHashMap<>(9);
     }
 
     /**
