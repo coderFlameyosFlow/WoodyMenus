@@ -653,7 +653,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
         int size = itemMap.size();
         for (int i = 0; i < size; i++) {
             MenuItem menuItem = itemMap.get(i);
-            if (item == null) {
+            if (menuItem == null) {
             	inventory.setItem(i, null);
             	continue;
             }
