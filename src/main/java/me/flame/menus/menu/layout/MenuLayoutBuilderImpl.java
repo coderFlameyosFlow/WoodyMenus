@@ -2,79 +2,88 @@ package me.flame.menus.menu.layout;
 
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.Menu;
-import me.flame.menus.menu.MenuFactory;
-import me.flame.menus.menu.Menus;
 import me.flame.menus.menu.PaginatedMenu;
 import me.flame.menus.modifiers.Modifier;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 
-// changed
-
+@ApiStatus.Internal
+@ApiStatus.Experimental
 public class MenuLayoutBuilderImpl implements MenuLayoutBuilder {
     public final Map<Character, MenuItem> itemMap;
     private final List<MenuItem> items = new ArrayList<>(54);
     private static final int MAX_ROW_SIZE = 8;
-    private static final MenuFactory FACTORY = Menus.getFactory();
 
-    public MenuLayoutBuilderImpl(Map<Character, MenuItem> itemMap) {
+    MenuLayoutBuilderImpl(Map<Character, MenuItem> itemMap) {
         this.itemMap = itemMap;
     }
 
     @Override
     public MenuLayoutBuilder row(String string) {
-        int stringsLength = string.length();
-        if (items.size() == 53) {
-            throw new IllegalArgumentException("Attempted to add more than 54 (53 if considering 0 index) items (max inventory size)");
-        }
-        if (stringsLength > MAX_ROW_SIZE) {
+        int stringLength = items.size() + string.length();
+        if (stringLength > MAX_ROW_SIZE) {
             throw new IllegalArgumentException("Too many strings (Temporary.. maybe?), length = "
-                    + stringsLength +
-                    "\n String = " + string);
+                    + stringLength +
+                    "\n String = " + string +
+                    "\nFix: Reduce the amount of letters to 9 letters in total.");
         }
 
-        char[] chars = string.toCharArray();
-        int index = 0;
-        for (; index != stringsLength; index++) {
-            if (items.size() == 53) {
-                throw new IllegalArgumentException("Attempted to add more than 54 items (max inventory size)");
+        int index = items.size();
+        while (true) {
+            if (items.get(53) != null) {
+                throw new IllegalArgumentException(
+                        "Attempted to add more than 54 (53 if considering 0 index) items (max inventory size)" +
+                        "\nString = " + string +
+                        "\nFix: Remove a few rows."
+                );
             }
-            char character = chars[index];
-            if (character == ' ') {
-                items.add(null);
-                continue;
+            try {
+                char character = string.charAt(index - items.size());
+                if (character == ' ') {
+                    items.set(index, null);
+                } else {
+                    MenuItem item = itemMap.get(character);
+                    if (item == null) {
+                        throw new IllegalArgumentException("Unknown item: " + character +
+                                "\nLikely a letter not in the bound map." +
+                                "\nMap: " + itemMap +
+                                "\nFix: Add or Change the letter.");
+                    }
+                    items.set(index, item);
+                }
+            } catch (IndexOutOfBoundsException e) {
+                break;
             }
-            MenuItem item = itemMap.get(character);
-            if (item == null) {
-                throw new IllegalArgumentException("Unknown item: " + character +
-                        "\nLikely a letter not in the bound map." +
-                        "\nMap: " + itemMap);
-            }
-            items.add(item);
         }
 
-        if (stringsLength < MAX_ROW_SIZE)
-            for (; index != MAX_ROW_SIZE; index++) items.add(null);
+        if (stringLength < MAX_ROW_SIZE) {
+            for (; index != stringLength + MAX_ROW_SIZE; index++) {
+                items.set(index, null);
+            }
+        }
         return this;
     }
 
     @Override
     public Menu createMenu(String title) {
-        int i = 0, size = items.size();
-        Menu menu = FACTORY.createMenu(title, size / 9, EnumSet.noneOf(Modifier.class));
+        int size = items.size();
+        Menu menu = new Menu(size / 9, title, EnumSet.noneOf(Modifier.class));
 
-        for (; i < size; i++)
+        for (int i = 0; i < size; i++) {
             menu.setItem(i, items.get(i));
+        }
         return menu;
     }
 
     @Override
     public PaginatedMenu createPaginated(String title, int pageSize) {
-        int i = 0, size = items.size();
-        PaginatedMenu menu = FACTORY.createPaginated(title, size / 9, pageSize);
+        int size = items.size();
+        PaginatedMenu menu = new PaginatedMenu(size / 9, pageSize, title, EnumSet.noneOf(Modifier.class), true);
 
-        for (; i < size; i++)
+        for (int i = 0; i < size; i++) {
             menu.setItem(i, items.get(i));
+        }
         return menu;
     }
 }
