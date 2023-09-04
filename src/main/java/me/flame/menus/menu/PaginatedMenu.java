@@ -56,21 +56,18 @@ public class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     public PaginatedMenu(final int rows, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
         super(rows, title, modifiers, true);
         this.pageItems = new LinkedHashMap<>(rows * 9);
-        this.pages = new Page[pages];
         this.pageSize = pageSize;
     }
 
     public PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers, boolean colorize) {
         super(type, title, modifiers, colorize);
         this.pageItems = new LinkedHashMap<>(rows * 9);
-        this.pages = new Page[pages];
         this.pageSize = pageSize;
     }
 
     public PaginatedMenu(final MenuType type, final int pageSize, @NotNull final String title, @NotNull final EnumSet<Modifier> modifiers) {
         super(type, title, modifiers, true);
         this.pageItems = new LinkedHashMap<>(rows * 9);
-        this.pages = new Page[pages];
         this.pageSize = pageSize;
     }
 
