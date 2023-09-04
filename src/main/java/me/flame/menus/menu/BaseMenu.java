@@ -652,7 +652,12 @@ public abstract class BaseMenu<M extends BaseMenu<M>>
     protected void recreateItems() {
         int size = itemMap.size();
         for (int i = 0; i < size; i++) {
-            ItemStack item = itemMap.get(i).getItemStack();
+            MenuItem menuItem = itemMap.get(i);
+            if (item == null) {
+            	inventory.setItem(i, null);
+            	continue;
+            }
+            ItemStack item = menuItem.getItemStack();
             inventory.setItem(i, item);
         }
     }
