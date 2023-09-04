@@ -79,7 +79,7 @@ public class MenuLayoutBuilderImpl implements MenuLayoutBuilder {
     @Override
     public PaginatedMenu createPaginated(String title, int pageSize) {
         int size = items.size();
-        PaginatedMenu menu = new PaginatedMenu(size / 9, pageSize, title, EnumSet.noneOf(Modifier.class), true);
+        PaginatedMenu menu = new PaginatedMenu(size / 9, pageSize, title);
 
         for (int i = 0; i < size; i++) {
             menu.setItem(i, items.get(i));
