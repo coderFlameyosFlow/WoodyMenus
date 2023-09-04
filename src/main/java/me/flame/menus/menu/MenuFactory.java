@@ -4,12 +4,23 @@ import lombok.NonNull;
 
 import me.flame.menus.modifiers.Modifier;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 
+
+// changed
+
+/**
+ * Menu Factory to create Menus
+ * @since 1.0.0
+ * @deprecated Use menu constructors like {@link Menu} or use {@link Menus#menu()}
+ */
+@Deprecated
 @SuppressWarnings("unused")
+@ApiStatus.ScheduledForRemoval(inVersion = "1.4.0")
 public final class MenuFactory {
     /**
      * Create a new regular Menu with the provided title and rows.
