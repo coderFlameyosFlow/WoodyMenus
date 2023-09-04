@@ -10,7 +10,7 @@ public final class Slot {
     public Slot(int row, int col) {
         this.row = row;
         this.col = col;
-        this.slot = ((col + (row - 1)) * 9) - 1;;
+        this.slot = ((row - 1) * 9) + (col - 1);
         slot = slot >= 54 ? -1 : slot;
     }
 
