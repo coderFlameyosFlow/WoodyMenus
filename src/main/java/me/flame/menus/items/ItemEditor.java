@@ -19,9 +19,11 @@ public final class ItemEditor {
 
     public ItemEditor(MenuItem item) {
         this.menuItem = item;
-        this.item = item.getItemStack();
+        this.item = item.itemStack;
         this.meta = this.item.getItemMeta();
     }
+
+    public static final List<String> emptyLore = Collections.emptyList();
 
     /**
      * Edits the name of the itemStack to whatever the provided title is.
@@ -108,7 +110,7 @@ public final class ItemEditor {
      * @return the builder for chaining
      */
     public ItemEditor emptyLore() {
-        this.meta.setLore(Collections.emptyList());
+        this.meta.setLore(emptyLore);
         return this;
     }
 
