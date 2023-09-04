@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-//changed
 @SuppressWarnings({ "unchecked", "unused" })
 public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     final ItemStack item;
@@ -110,7 +109,7 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     }
 
     public B setUnbreakable() {
-        if (this.hasNoItemMeta) return (B) this;
+        if (this.hasNoItemMeta || VersionHelper.IS_UNBREAKABLE_LEGACY) return (B) this;
         this.meta.setUnbreakable(true);
         return (B) this;
     }
@@ -137,11 +136,11 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
 
     public MenuItem buildItem() {
         this.item.setItemMeta(meta);
-        return new MenuItem(item, null);
+        return MenuItem.of(item);
     }
 
     public MenuItem buildItem(Consumer<InventoryClickEvent> event) {
         this.item.setItemMeta(meta);
-        return new MenuItem(item, event);
+        return MenuItem.of(item, event);
     }
 }
