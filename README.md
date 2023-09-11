@@ -162,7 +162,7 @@ public class MyPlugin extends JavaPlugin {
             getLogger().info("An Iron Sword got Clicked!");
         }); // those args are optional you can execute .buildItem(), or even .build() if you want a normal ItemStack
         exampleMenu.addItem(item);
-        exampleMenu.getOptionalItem(1) // Woody's indexes start from 1, this is #1, and yes this is an Optional<MenuItem>
+        exampleMenu.get(1) // Woody's indexes start from 0, this is #2, and yes this is an Optional<MenuItem>
                    .filter(item -> item.getItemStack().getType() == Material.IRON_SWORD)
                    .map(MenuItem::getUniqueId)
                    .ifPresent(uuid -> getLogger().info(uuid.toString())); // man I love Optionals
