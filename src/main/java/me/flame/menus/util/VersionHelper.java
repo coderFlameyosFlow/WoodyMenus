@@ -1,12 +1,22 @@
 package me.flame.menus.util;
 
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-public class VersionHelper {
+// changed
+
+public final class VersionHelper {
+    private VersionHelper() {
+        throw new UnsupportedOperationException();
+    }
+
     // Unbreakable change
     private static final int V1_11 = 1110;
     // Material and components on items change
@@ -26,23 +36,23 @@ public class VersionHelper {
     public static final boolean IS_ITEM_LEGACY = CURRENT_VERSION < V1_13;
 
     /**
-     * Checks if the version supports the {@link org.bukkit.inventory.meta.ItemMeta#setUnbreakable(boolean)} method
+     * Checks if the version supports the {@link ItemMeta#setUnbreakable(boolean)} method
      */
     public static final boolean IS_UNBREAKABLE_LEGACY = CURRENT_VERSION < V1_11;
 
     /**
-     * Checks if the version supports {@link org.bukkit.persistence.PersistentDataContainer}
+     * Checks if the version supports {@link PersistentDataContainer}
      */
     public static final boolean IS_PDC_VERSION = CURRENT_VERSION >= V1_14;
 
     /**
-     * Checks if the version doesn't have {@link org.bukkit.inventory.meta.SkullMeta#setOwningPlayer(OfflinePlayer)} and
-     * {@link org.bukkit.inventory.meta.SkullMeta#setOwner(String)} should be used instead
+     * Checks if the version doesn't have {@link SkullMeta#setOwningPlayer(OfflinePlayer)} and
+     * {@link SkullMeta#setOwner(String)} should be used instead
      */
     public static final boolean IS_SKULL_OWNER_LEGACY = CURRENT_VERSION < V1_12_1;
 
     /**
-     * Checks if the version has {@link org.bukkit.inventory.meta.ItemMeta#setCustomModelData(Integer)}
+     * Checks if the version has {@link ItemMeta#setCustomModelData(Integer)}
      */
     public static final boolean IS_CUSTOM_MODEL_DATA = CURRENT_VERSION >= V1_14;
 
@@ -57,15 +67,15 @@ public class VersionHelper {
                 .matcher(Bukkit.getBukkitVersion());
 
         if (matcher.find()) {
-            String version = matcher.group(1).replace(".", "");
+            String version = StringUtils.replace(matcher.group(1), ".", "");
             String patch = matcher.group(2);
-            patch = patch == null ? "0" : patch.replace(".", "");
+            patch = patch == null ? "0" : StringUtils.replace(patch, ".", "");
             return Integer.parseInt(version + patch, 10);
         }
 
         throw new RuntimeException(
-                "Could not retrieve server version!" +
-                "\nFix: Install the server properly or add a WORKING version/jar."
+            "Could not retrieve server version!" +
+            "\nFix: Install the server properly or add a WORKING version/jar."
         );
     }
 }
