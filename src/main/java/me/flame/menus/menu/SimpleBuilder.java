@@ -1,5 +1,7 @@
 package me.flame.menus.menu;
 
+//changed
+
 public class SimpleBuilder extends BaseBuilder<Menu, SimpleBuilder> {
     SimpleBuilder() {
         super();
@@ -11,7 +13,7 @@ public class SimpleBuilder extends BaseBuilder<Menu, SimpleBuilder> {
         final Menu menu = type == MenuType.CHEST
                 ? new Menu(rows, title, modifiers)
                 : new Menu(type, title, modifiers);
-        if (menuConsumer != null) menuConsumer.accept(menu);
+        menuConsumer.accept(menu);
         return menu;
     }
 }
