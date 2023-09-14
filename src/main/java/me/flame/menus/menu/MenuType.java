@@ -6,6 +6,7 @@ import org.bukkit.event.inventory.InventoryType;
 
 import lombok.Getter;
 
+@Getter
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
 public enum MenuType {
     CHEST(InventoryType.CHEST, 9),
@@ -15,6 +16,6 @@ public enum MenuType {
     DISPENSER(InventoryType.DISPENSER, 8),
     BREWING(InventoryType.BREWING, 4);
 
-    private final @Getter InventoryType type;
-    private final @Getter int limit;
+    private final InventoryType type;
+    private final int limit;
 }
