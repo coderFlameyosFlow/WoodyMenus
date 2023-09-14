@@ -1,5 +1,6 @@
 package me.flame.menus.components.nbt;
 
+import me.flame.menus.menu.Menus;
 import me.flame.menus.util.VersionHelper;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -10,10 +11,17 @@ import org.jetbrains.annotations.NotNull;
  * Will use the PDC wrapper if version is higher than 1.14
  * @author TriumphTeam
  */
-
-//changed
+@SuppressWarnings("unused")
 public final class ItemNbt {
-    public static final NbtWrapper WRAPPER = VersionHelper.IS_PDC_VERSION ? new Pdc(JavaPlugin.getProvidingPlugin(ItemNbt.class)) : new LegacyNbt();
+    private static NbtWrapper wrapper;
+
+    public static void wrapper(NbtWrapper w) {
+        wrapper = w;
+    }
+
+    public static NbtWrapper wrapper() {
+        return wrapper;
+    }
 
     /**
      * Sets an NBT tag to the an {@link ItemStack}.
@@ -24,7 +32,7 @@ public final class ItemNbt {
      * @return An {@link ItemStack} that has NBT set.
      */
     public static ItemStack setString(@NotNull final ItemStack itemStack, @NotNull final String key, @NotNull final String value) {
-        return WRAPPER.setString(itemStack, key, value);
+        return wrapper.setString(itemStack, key, value);
     }
 
     /**
@@ -35,7 +43,7 @@ public final class ItemNbt {
      * @return The tag that was stored in the {@link ItemStack}.
      */
     public static String getString(@NotNull final ItemStack itemStack, @NotNull final String key) {
-        return WRAPPER.getString(itemStack, key);
+        return wrapper.getString(itemStack, key);
     }
 
     /**
@@ -48,7 +56,7 @@ public final class ItemNbt {
      * @return An {@link ItemStack} with a boolean value set.
      */
     public static ItemStack setBoolean(@NotNull final ItemStack itemStack, @NotNull final String key, final boolean value) {
-        return WRAPPER.setBoolean(itemStack, key, value);
+        return wrapper.setBoolean(itemStack, key, value);
     }
 
     /**
@@ -59,6 +67,6 @@ public final class ItemNbt {
      * @return An {@link ItemStack} that has the tag removed.
      */
     public static ItemStack removeTag(@NotNull final ItemStack itemStack, @NotNull final String key) {
-        return WRAPPER.removeTag(itemStack, key);
+        return wrapper.removeTag(itemStack, key);
     }
 }
