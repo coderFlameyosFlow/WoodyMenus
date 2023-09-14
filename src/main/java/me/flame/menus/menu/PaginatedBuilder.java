@@ -4,40 +4,34 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * GUI builder for creating a {@link PaginatedMenu}
+ * Menu builder for creating a {@link PaginatedMenu}
  */
 @SuppressWarnings("unused")
 public class PaginatedBuilder extends BaseBuilder<PaginatedMenu, PaginatedBuilder> {
-
-    private int pageSize = 0;
+    private int pages = 2;
 
     /**
-     * Sets the desirable page size, most of the time this isn't needed
+     * Set the number of pages for the paginated builder.
      *
-     * @param pageSize The amount of free slots that page items should occupy
-     * @return The current builder
+     * @param  pages  the number of pages to set
+     * @return        the builder for chaining
      */
     @NotNull
     @Contract("_ -> this")
-    public PaginatedBuilder pageSize(final int pageSize) {
-        this.pageSize = pageSize;
+    public PaginatedBuilder pages(final int pages) {
+        this.pages = pages;
         return this;
     }
 
-    /**
-     * Creates a new {@link PaginatedMenu}
-     *
-     * @return A new {@link PaginatedMenu}
-     */
     @NotNull
     @Override
     @Contract(" -> new")
     public PaginatedMenu create() {
         checkRows(rows);
         final PaginatedMenu menu = type == MenuType.CHEST
-                ? new PaginatedMenu(rows, pageSize, title, modifiers)
-                : new PaginatedMenu(type, pageSize, title, modifiers);
-        if (menuConsumer != null) menuConsumer.accept(menu);
+                ? new PaginatedMenu(rows, pages, title, modifiers)
+                : new PaginatedMenu(type, pages, title, modifiers);
+        menuConsumer.accept(menu);
         return menu;
     }
 }
