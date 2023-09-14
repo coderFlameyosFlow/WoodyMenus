@@ -1,10 +1,11 @@
 package me.flame.menus.menu;
 
 import me.flame.menus.modifiers.Modifier;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
-import java.util.Set;
 
+@SuppressWarnings("unused")
 public final class Menu extends BaseMenu<Menu> {
     public Menu(int rows, String title, EnumSet<Modifier> modifiers, boolean colorize) {
         super(rows, title, modifiers, colorize);
@@ -28,5 +29,34 @@ public final class Menu extends BaseMenu<Menu> {
 
     public Menu(MenuType type, String title, EnumSet<Modifier> modifiers, boolean colorize) {
         super(type, title, modifiers, colorize);
+    }
+
+    /**
+     * Generate a paginated menu; convert to a {@link PaginatedMenu} from a {@link Menu}
+     *
+     * @return         	The generated PaginatedMenu object
+     *                  Comes with 3 pages by default.
+     */
+    @NotNull
+    public PaginatedMenu pagination() {
+        PaginatedMenu menu = new PaginatedMenu(rows, 3, title, modifiers);
+        for (int i = 0; i < size; i++) {
+            menu.setItem(i, itemMap.get(i));
+        }
+        return menu;
+    }
+
+    /**
+     * Generate a paginated menu; convert to a {@link PaginatedMenu} from a {@link Menu}
+     * @param pages the amount of pages to generate with the paged menu
+     * @return         	The generated PaginatedMenu object
+     */
+    @NotNull
+    public PaginatedMenu pagination(int pages) {
+        PaginatedMenu menu = new PaginatedMenu(rows, pages, title, modifiers);
+        for (int i = 0; i < size; i++) {
+            menu.setItem(i, itemMap.get(i));
+        }
+        return menu;
     }
 }
