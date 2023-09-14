@@ -108,7 +108,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
      *
      * @param pageRows The page size.
      */
-    public PaginatedMenu(final int pageRows, final int pageCount, String title, EnumSet<Modifier> modifiers) {
+    private PaginatedMenu(final int pageRows, final int pageCount, String title, EnumSet<Modifier> modifiers) {
         super(pageRows, title, modifiers);
         this.pageList = new ArrayList<>(pageCount);
         for (int i = 0; i < pageCount; i++) {
@@ -122,7 +122,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     /**
      * Main constructor to provide a way to create PaginatedMenu
      */
-    public PaginatedMenu(MenuType type, final int pageCount, String title, EnumSet<Modifier> modifiers) {
+    private PaginatedMenu(MenuType type, final int pageCount, String title, EnumSet<Modifier> modifiers) {
         super(type, title, modifiers);
         this.pageList = new ArrayList<>(pageCount);
         for (int i = 0; i < pageCount; i++) {
@@ -132,10 +132,6 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         this.pages = Pages.create(pageList, title, rows, pageCount, (pages) -> {
             pages.setCurrentPage(pageList.get(pageNum));
         });
-    }
-
-    public Iterator<Page> pages() {
-        return pageList.iterator();
     }
 
     @NotNull
@@ -166,6 +162,10 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     @NotNull
     public static PaginatedMenu create(String title, MenuType type, int pages, EnumSet<Modifier> modifiers) {
         return new PaginatedMenu(type, pages, title, modifiers);
+    }
+
+    public Iterator<Page> pages() {
+        return pageList.iterator();
     }
 
     public void recreateInventory() {
