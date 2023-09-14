@@ -90,21 +90,9 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
         super(type, title, EnumSet.noneOf(Modifier.class));
         this.uuid = uuid;
         this.player = Objects.requireNonNull(Bukkit.getPlayer(uuid));
-        this.mainInventory = new PaginatedMenu(pageRows, pageCount, title, EnumSet.noneOf(Modifier.class));
+        this.mainInventory = PaginatedMenu.create(title, pageRows, pageCount, EnumSet.noneOf(Modifier.class));
 
         this.pages = pageCount;
-    }
-
-    /**
-     * Sets the page size
-     *
-     * @param pageRows The new page size
-     * @return The GUI for easier use when declaring, works like a builder
-     */
-    public SeparatedPagedMenu setPageSize(final int pageRows) {
-        this.pageRows = pageRows;
-        this.pageSize = pageRows * 9;
-        return this;
     }
 
     /**
