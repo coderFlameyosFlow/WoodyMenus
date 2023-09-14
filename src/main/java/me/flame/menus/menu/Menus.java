@@ -1,42 +1,55 @@
 package me.flame.menus.menu;
 
+import me.flame.menus.components.nbt.ItemNbt;
+import me.flame.menus.components.nbt.LegacyNbt;
+import me.flame.menus.components.nbt.NbtWrapper;
+import me.flame.menus.components.nbt.Pdc;
+import me.flame.menus.util.VersionHelper;
+
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
+
 import me.flame.menus.listeners.*;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.ApiStatus;
+
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")
 public final class Menus {
-    private static final MenuFactory menuFactory = new MenuFactory();
+    private static Plugin plugin;
 
-    public static void init(Plugin plugin) {
-        Bukkit.getPluginManager().registerEvents(new MenuListeners(plugin), plugin);
-    }
-
-    @Contract(value = " -> new", pure = true)
-    public static @NotNull SimpleBuilder menu() {
-        return new SimpleBuilder();
-    }
-
-    @Contract(value = " -> new", pure = true)
-    public static @NotNull PaginatedBuilder paginated() {
-        return new PaginatedBuilder();
+    /**
+     * Initializes the all the menus with the given Plugin instance.
+     *
+     * @param  p  the Plugin instance to be initialized
+     */
+    public static void init(Plugin p) {
+        plugin = p;
+        ItemNbt.wrapper(VersionHelper.IS_PDC_VERSION ? new Pdc(p) : new LegacyNbt());
+        Bukkit.getPluginManager().registerEvents(new MenuListeners(), p);
     }
 
     /**
-     * Get the Menu Factory to use instead of making Menus using Builders.
-     * <p>
-     * This is a much less verbose way to create menus, and much less "Java-eey"
-     * @return a less verbose way of creating menus; The MenuFactory
-     * @since 1.0.0
-     * @deprecated Use menu constructors like {@link Menu} or use builders like {@link Menus#menu()}
+     * Returns the Plugin instance.
+     *
+     * @return  the Plugin instance
      */
-    @Deprecated
-    @ApiStatus.ScheduledForRemoval(inVersion = "1.4.0")
-    public static MenuFactory getFactory() {
-        return menuFactory;
+    public static Plugin plugin() {
+        assert plugin != null :
+                "Menus#plugin() called before Menus#init(Plugin)" +
+                "\nFix: Call Menus.init(Plugin) at JavaPlugin#onEnable()";
+        return plugin;
+    }
+
+    @NotNull
+    @Contract(value = " -> new", pure = true)
+    public static SimpleBuilder menu() {
+        return new SimpleBuilder();
+    }
+
+    @NotNull
+    @Contract(value = " -> new", pure = true)
+    public static PaginatedBuilder paginated() {
+        return new PaginatedBuilder();
     }
 }
