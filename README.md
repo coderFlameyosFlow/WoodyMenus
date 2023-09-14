@@ -51,11 +51,7 @@ Now I don't know about OTHER frameworks, but Woody provides some special feature
 
     Manually set the item meta
 
-    (You can update a GuiItem using BaseGui#updateItem(int, ItemStack) but extra steps just incase you need to have an action that triumph-gui doesn't have by default in updateItem)
-
-    Create a new GuiItem via the Constructor or maybe ItemBuilder (optionally with the action)
-
-    Put it into the items in the (Specific)Gui.
+    Update the item
 
     For Gui it would look something like this:
 
@@ -64,29 +60,16 @@ Now I don't know about OTHER frameworks, but Woody provides some special feature
     ItemStack item = guiItem.getItemStack();
     ItemMeta meta = item.getItemMeta();
     // do what you want with the meta/item
-    item.setItemMeta(meta);
-    // here is updating the item from the gui instance
-    guiItem.setItemStack(item);
-    guiItem.setAction(event -> ...); // optional
     gui.updateItem(20, item);
-    gui.open(...); // only if you need
     ```
 
     Horrendous! What is this? it may even look the same in raw spigot inventories! maybe slightly better, slightly worse.
     Here is the Woody way:
 
     ```java
-    MenuItem menuItem = menu.getItem(20);
-    menuItem = menuItem.editor() // do whatever you want there's a bunch of tab completions unless you live under a rock and dont use intellij or at least vscode
-                       .done(); // new MenuItem instance
-    menuItem.setClickAction(event -> ...); // optional
-    menu.setItem(20, menuItem);
-    menu.open(...); // only if you need
-
-    // even cleaner option if you don't use setClickAction
-    menu.setItem(20, menu.getItem(20).editor() // again, do what you want
-                         .done());
-    menu.open(...); // only if you need
+    menu.getItem(20).editor() // edit.
+        .done(); // when you execute ItemEditor#done() it will literally change the itemStack and action of that object.
+    // on v1.3.4 and under you needed to set the item or update it but thats no longer the case.
     ```
     Now you're going to likely write a lot less, have realistically the same performance impact and enjoy readable & concise code.
 
