@@ -1,5 +1,5 @@
 # Woody
-### THIS IS THEORETICALLY A FORK/BASED OF TRIUMPH-GUI. SHOUT OUT TO TRIUMPHTEAM.
+### THIS IS BASED OFF TRIUMPH-GUI. SHOUT OUT TO TRIUMPHTEAM.
 triumph-gui: https://github.com/TriumphTeam/triumph-gui
 
 No BS High-performance, Minimal and Safe Menus Library
