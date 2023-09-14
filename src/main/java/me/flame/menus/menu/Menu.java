@@ -39,7 +39,7 @@ public final class Menu extends BaseMenu<Menu> {
      */
     @NotNull
     public PaginatedMenu pagination() {
-        PaginatedMenu menu = new PaginatedMenu(rows, 3, title, modifiers);
+        PaginatedMenu menu = PaginatedMenu.create(rows, 3, title, modifiers);
         for (int i = 0; i < size; i++) {
             menu.setItem(i, itemMap.get(i));
         }
@@ -53,7 +53,7 @@ public final class Menu extends BaseMenu<Menu> {
      */
     @NotNull
     public PaginatedMenu pagination(int pages) {
-        PaginatedMenu menu = new PaginatedMenu(rows, pages, title, modifiers);
+        PaginatedMenu menu = PaginatedMenu.create(rows, pages, title, modifiers);
         for (int i = 0; i < size; i++) {
             menu.setItem(i, itemMap.get(i));
         }
