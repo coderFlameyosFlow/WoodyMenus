@@ -29,8 +29,8 @@ public class PaginatedBuilder extends BaseBuilder<PaginatedMenu, PaginatedBuilde
     public PaginatedMenu create() {
         checkRows(rows);
         final PaginatedMenu menu = type == MenuType.CHEST
-                ? new PaginatedMenu(rows, pages, title, modifiers)
-                : new PaginatedMenu(type, pages, title, modifiers);
+                ? PaginatedMenu.create(title, rows, pages, modifiers)
+                : PaginatedMenu.create(title, type, pages, modifiers);
         menuConsumer.accept(menu);
         return menu;
     }
