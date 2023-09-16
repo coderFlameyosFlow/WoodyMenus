@@ -1,28 +1,3 @@
-/**
- * MIT License
- * <p>
- * Copyright (c) 2021 TriumphTeam
- * Copyright (c) 2023 FlameyosFlow
- * <p>
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * <p>
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * <p>
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 package me.flame.menus.menu;
 
 import com.google.common.collect.ImmutableList;
@@ -47,7 +22,7 @@ import static org.bukkit.ChatColor.translateAlternateColorCodes;
 /**
  * GUI that allows you to have multiple pages
  */
-@SuppressWarnings({ "unused", "CodeBlock2Expr" })
+@SuppressWarnings("unused")
 public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     @NotNull
     final List<Page> pageList;
@@ -57,8 +32,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
 
     private int pageNum;
 
-    private final PageDecoration pageDecorator = PageDecoration.create(this);
-    private final Pages pages;
+    private final Decorator pageDecorator = PageDecoration.create(this);
 
     private static final BukkitScheduler sch = Bukkit.getScheduler();
 
@@ -68,8 +42,6 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
                 ? Bukkit.createInventory(this, size, colorizedTitle)
                 : Bukkit.createInventory(this, type.getType(), colorizedTitle);
         this.title = colorizedTitle;
-        pages.setTitle(title);
-
         this.inventory = updatedInventory;
 
         this.updating = true;
@@ -79,28 +51,16 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         return this;
     }
 
+    public <T extends Decorator> T getPageDecorator(Class<T> pageClass) {
+        return pageClass.cast(pageDecorator);
+    }
+
     public PageDecoration getPageDecorator() {
-        return pageDecorator;
+        return getPageDecorator(PageDecoration.class);
     }
 
-    /**
-     * Retrieves Pages in the PaginatedMenu and the ability to set/add/remove items from every page.
-     *
-     * @return  the Pages object
-     */
-    public Pages getPages() {
-        return pages;
-    }
-
-    private PaginatedMenu(@NotNull Pages pages, EnumSet<Modifier> modifiers) {
-        super(pages.rows, pages.getTitle(), modifiers);
-        this.pages = pages;
-        this.pageList = pages.getPages();
-        for (int i = 0; i < size; i++) {
-            pages.add(Page.of(this));
-        }
-        pages.setCurrentPage(pages.get(pageNum));
-        this.currentPage = pages.getCurrentPage();
+    public void addPage() {
+        pageList.add(Page.of(this));
     }
 
     /**
@@ -115,10 +75,8 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
             pageList.add(Page.of(this));
         }
         this.currentPage = pageList.get(pageNum);
-        this.pages = Pages.create(pageList, title, pageRows, pageCount, (pages) -> {
-            pages.setCurrentPage(pageList.get(pageNum));
-        });
     }
+
     /**
      * Main constructor to provide a way to create PaginatedMenu
      */
@@ -129,19 +87,10 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
             pageList.add(Page.of(this));
         }
         this.currentPage = pageList.get(pageNum);
-        this.pages = Pages.create(pageList, title, rows, pageCount, (pages) -> {
-            pages.setCurrentPage(pageList.get(pageNum));
-        });
     }
 
-    @NotNull
-    public static PaginatedMenu create(Pages pages) {
-        return new PaginatedMenu(pages, EnumSet.noneOf(Modifier.class));
-    }
-
-    @NotNull
-    public static PaginatedMenu create(Pages pages, EnumSet<Modifier> modifiers) {
-        return new PaginatedMenu(pages, modifiers);
+    public List<Page> pages() {
+        return ImmutableList.copyOf(pageList);
     }
 
     @NotNull
@@ -162,19 +111,6 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     @NotNull
     public static PaginatedMenu create(String title, MenuType type, int pages, EnumSet<Modifier> modifiers) {
         return new PaginatedMenu(type, pages, title, modifiers);
-    }
-
-    public Iterator<Page> pages() {
-        return pageList.iterator();
-    }
-
-    public void recreateInventory() {
-        this.rows++;
-        this.size = rows * 9;
-
-        pages.rows = rows;
-        pages.size = size;
-        inventory = Bukkit.createInventory(this, size, title);
     }
 
     /**
@@ -428,11 +364,22 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
             );
         }
 
-        pageNum = openPage;
-        currentPage = pageList.get(openPage);
+        this.pageNum = openPage;
+        this.currentPage = pageList.get(openPage);
 
         recreateItems();
         player.openInventory(inventory);
+    }
+
+    /**
+     * Opens the GUI to a specific page for the given player
+     *
+     * @param player   The {@link HumanEntity} to open the GUI to
+     * @return the object
+     */
+    public PaginatedMenu open(@NotNull final HumanEntity player) {
+        this.open(player, 1);
+        return this;
     }
 
     /**
@@ -441,7 +388,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
      * @return The current page number
      */
     public int getCurrentPageNumber() {
-        return pageNum;
+        return pageNum + 1;
     }
 
     /**
@@ -472,10 +419,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         if (pageNum + 1 >= pageList.size()) return false;
 
         pageNum++;
-
-        Page page = pages.get(pageNum);
-        pages.setCurrentPage(page);
-        this.currentPage = page;
+        this.currentPage = pageList.get(pageNum);
 
         recreateItems();
         return true;
@@ -490,10 +434,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         if (pageNum - 1 < 0) return false;
 
         pageNum--;
-
-        Page page = pages.get(pageNum);
-        pages.setCurrentPage(page);
-        this.currentPage = page;
+        this.currentPage = pageList.get(pageNum);
 
         recreateItems();
         return true;
@@ -505,16 +446,158 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
      * @return False if there is no next page.
      */
     public boolean page(int pageNum) {
-        if (pageNum > size || pageNum < 0) return false;
+        if (pageNum > pageList.size() || pageNum < 0) return false;
 
         this.pageNum = pageNum;
-
-        Page page = pages.get(pageNum);
-        pages.setCurrentPage(page);
-        this.currentPage = page;
+        this.currentPage = pageList.get(pageNum);
 
         recreateItems();
         return true;
+    }
+
+    public Page getPage(int index) {
+        try {
+            return pageList.get(index);
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
+    }
+
+    public Optional<Page> getOptionalPage(int index) {
+        try {
+            return Optional.ofNullable(pageList.get(index));
+        } catch (IndexOutOfBoundsException e) {
+            return Optional.empty();
+        }
+    }
+
+    public void addPageItems(MenuItem... items) {
+        for (Page page : pageList) {
+            page.addItem(items);
+        }
+    }
+
+    public void addPageItems(ItemStack... items) {
+        for (Page page : pageList) {
+            page.addItem(items);
+        }
+    }
+
+    public void setPageItem(Slot slot, MenuItem item) {
+        for (Page page : pageList) {
+            page.setItem(slot, item);
+        }
+    }
+
+    public void setPageItem(int[] slots, MenuItem item) {
+        for (Page page : pageList) {
+            for (int slot : slots)
+                page.setItem(slot, item);
+        }
+    }
+
+    public void setPageItem(Slot[] slots, MenuItem item) {
+        for (Page page : pageList) {
+            for (Slot slot : slots)
+                page.setItem(slot, item);
+        }
+    }
+
+    public void removePageItem(Slot slot) {
+        for (Page page : pageList) {
+            page.removeItem(slot);
+        }
+    }
+
+    public void removePageItem(int slot) {
+        for (Page page : pageList) {
+            page.removeItem(slot);
+        }
+    }
+
+    public void removePageItem(ItemStack slot) {
+        for (Page page : pageList) {
+            page.removeItem(slot);
+        }
+    }
+
+    public void removePageItem(MenuItem slot) {
+        for (Page page : pageList) {
+            page.removeItem(slot);
+        }
+    }
+
+    public void removePageItem(ItemStack... slot) {
+        for (Page page : pageList) {
+            page.removeItem(slot);
+        }
+    }
+
+    public void removePageItem(MenuItem... slot) {
+        for (Page page : pageList) {
+            page.removeItem(slot);
+        }
+    }
+
+    public void setPageItem(int startingIndex, int[] slots, MenuItem items) {
+        int size = slots.length;
+        for (Page page : pageList) {
+            for (int i = startingIndex; i < size; i++) {
+                page.setItem(slots[i], items);
+            }
+        }
+    }
+
+    public void setPageItem(int startingIndex, Slot[] slots, MenuItem items) {
+        for (Page page : pageList) {
+            for (int i = startingIndex; i < size; i++) {
+                page.setItem(slots[i], items);
+            }
+        }
+    }
+
+    public void setPageItem(int slot, ItemStack item) {
+        for (Page page : pageList) {
+            page.setItem(slot, item);
+        }
+    }
+
+    public void setPageItem(Slot slot, ItemStack item) {
+        for (Page page : pageList) {
+            page.setItem(slot, item);
+        }
+    }
+
+    public void setPageItem(int startingIndex, int[] slots, ItemStack items) {
+        for (Page page : pageList) {
+            for (int i = startingIndex; i < size; i++) {
+                page.setItem(slots[i], items);
+            }
+        }
+    }
+
+    public void setPageItem(int startingIndex, Slot[] slots, ItemStack... items) {
+        for (Page page : pageList) {
+            for (int i = startingIndex; i < size; i++) {
+                page.setItem(slots[i], items[i]);
+            }
+        }
+    }
+
+    public void setPageItem(Slot[] slots, ItemStack item) {
+        for (Page page : pageList) {
+            for (Slot slot : slots) {
+                page.setItem(slot, item);
+            }
+        }
+    }
+
+    public void setPageItem(int[] slots, ItemStack item) {
+        for (Page page : pageList) {
+            for (int slot : slots) {
+                page.setItem(slot, item);
+            }
+        }
     }
 
     @NotNull
