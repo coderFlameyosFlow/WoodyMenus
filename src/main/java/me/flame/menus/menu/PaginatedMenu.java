@@ -63,6 +63,15 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         pageList.add(Page.of(this));
     }
 
+    public M update() {
+        this.updating = true;
+        this.recreateItems();
+        List<HumanEntity> entities = ImmutableList.copyOf(inventory.getViewers());
+        entities.forEach(e -> ((Player) e).updateInventory());
+        this.updating = false;
+        return (M) this;
+    }
+
     /**
      * Main constructor to provide a way to create PaginatedMenu
      *
