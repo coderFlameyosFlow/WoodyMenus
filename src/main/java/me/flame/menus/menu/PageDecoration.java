@@ -6,12 +6,13 @@ import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.fillers.MenuFiller;
 
 import org.bukkit.Material;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("unused")
-public final class PageDecoration {
+public final class PageDecoration implements Decorator {
     @NotNull
     private final PaginatedMenu menu;
     
@@ -25,11 +26,6 @@ public final class PageDecoration {
         return new PageDecoration(menu);
     }
 
-    /**
-     * Fills the borders of the pages with a given item stack.
-     *
-     * @param itemStack the item stack to fill the pages with
-     */
     public void fillPageBorders(ItemStack itemStack) {
         int size = menu.size;
         for (Page page : menu.pageList) {
@@ -39,11 +35,6 @@ public final class PageDecoration {
         }
     }
 
-    /**
-     * Fills the borders of the pages with a given item stack.
-     *
-     * @param borderMaterial  the item stack to fill the pages with
-     */
     public void fillPageBorders(Material borderMaterial) {
         ItemStack itemStack = new ItemStack(borderMaterial);
         int size = menu.size;
@@ -54,11 +45,6 @@ public final class PageDecoration {
         }
     }
 
-    /**
-     * Fills the borders of the pages with a given item stack.
-     *
-     * @param item the item stack to fill the pages with
-     */
     public void fillPageBorders(MenuItem item) {
         int size = menu.size;
         for (Page page : menu.pageList) {
@@ -68,11 +54,6 @@ public final class PageDecoration {
         }
     }
 
-    /**
-     * Fills the pages of a menu with a given item stack.
-     *
-     * @param borderMaterial  the item stack to fill the pages with
-     */
     public void fillPages(Material borderMaterial) {
         ItemStack item = new ItemStack(borderMaterial);
         int size = menu.size;
@@ -86,11 +67,6 @@ public final class PageDecoration {
         }
     }
 
-    /**
-     * Fills the pages of a menu with a given item stack.
-     *
-     * @param menuItem  the item stack to fill the pages with
-     */
     public void fillPages(@NotNull MenuItem menuItem) {
         int size = menu.size;
         for (Page page : menu.pageList) {
@@ -103,11 +79,6 @@ public final class PageDecoration {
         }
     }
 
-    /**
-     * Fills the pages of a menu with a given item stack.
-     *
-     * @param  itemStack  the item stack to fill the pages with
-     */
     public void fillPages(ItemStack itemStack) {
         int size = menu.size;
         for (Page page : menu.pageList) {
