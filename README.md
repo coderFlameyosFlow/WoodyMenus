@@ -136,7 +136,6 @@ public class MyPlugin extends JavaPlugin {
               .title("&cExample Menu") // by default colorized
               .rows(6) // if you go above 6 or under 1 you'll get an IllegalArgumentException
               .create();
-        exampleMenu = Menus.getFactory().createMenu("&cExample Menu", 6); // alternative
         exampleMenu.setClickAction(event -> { // InventoryClickEvent
             event.setCancelled(true); 
         });
