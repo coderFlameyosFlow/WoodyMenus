@@ -389,7 +389,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
      * @return the object
      */
     public PaginatedMenu open(@NotNull final HumanEntity player) {
-        this.open(player, 1);
+        this.open(player, 0);
         return this;
     }
 
