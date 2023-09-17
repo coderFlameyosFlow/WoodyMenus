@@ -1,9 +1,11 @@
 package me.flame.menus.menu;
 
+import me.flame.menus.items.MenuItem;
 import me.flame.menus.modifiers.Modifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
+import java.util.List;
 
 @SuppressWarnings("unused")
 public final class Menu extends BaseMenu<Menu> {
