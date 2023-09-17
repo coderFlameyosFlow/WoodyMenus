@@ -9,6 +9,7 @@ import lombok.val;
 
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.fillers.Filler;
+import me.flame.menus.menu.fillers.MenuFiller;
 import me.flame.menus.menu.iterator.MenuIterator;
 import me.flame.menus.modifiers.Modifier;
 
@@ -35,8 +36,6 @@ import java.util.stream.Stream;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
 
-// changed
-
 @Getter
 @ApiStatus.NonExtendable
 @SuppressWarnings({ "unused", "BooleanMethodIsAlwaysInverted", "unchecked", "UnusedReturnValue" })
@@ -45,16 +44,13 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
     protected Inventory inventory;
 
     @NotNull
-    protected final MenuType type;
+    protected MenuType type = MenuType.CHEST;
 
     @NotNull
     protected final EnumSet<Modifier> modifiers;
 
     @NotNull
     protected final Map<Integer, MenuItem> itemMap;
-
-    @NotNull
-    protected final Filler filler = Filler.from(this);
 
     @NotNull
     private final MenuIterator iterator = new MenuIterator(IterationDirection.HORIZONTAL, this);
@@ -64,6 +60,8 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
 
     @NotNull
     private static final BukkitScheduler sch = Bukkit.getScheduler();
+
+    protected @Setter MenuFiller defaultFiller = Filler.from(this);
 
     protected int rows = 1, size;
 
@@ -85,7 +83,6 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
     }
 
     public BaseMenu(int rows, String title, @NotNull EnumSet<Modifier> modifiers, boolean colorize) {
-        this.type = MenuType.CHEST;
         this.modifiers = modifiers;
         this.rows = rows;
         this.title = colorize ? translateAlternateColorCodes('&', title) : title;
@@ -99,11 +96,19 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
         this.modifiers = modifiers;
         this.title = colorize ? translateAlternateColorCodes('&', title) : title;
         this.size = type.getLimit();
-        this.itemMap = new LinkedHashMap<>(size);
+        this.itemMap = new HashMap<>(size);
         this.inventory = Bukkit.createInventory(this, type.getType(), title);
     }
 
     private static final Material AIR = Material.AIR;
+
+    public MenuFiller getFiller() {
+        return getFiller(Filler.class);
+    }
+
+    public <T extends MenuFiller> T getFiller(Class<T> value) {
+        return value.cast(defaultFiller);
+    }
 
     public MenuIterator iterator() {
         return iterator;
@@ -141,14 +146,8 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
 
         int slot = 0;
     	for (final ItemStack guiItem : items) {
-        	if (slot >= size) {
-            	notAddedItems.add(guiItem);
-            	continue;
-        	}
-
-            while (occupiedSlots.contains(slot)) {
-                slot++;
-            }
+            slot = getSlot(occupiedSlots, slot);
+            if (isInvalidSlot(notAddedItems, slot, guiItem)) continue; // incase.
 
             itemMap.put(slot, MenuItem.of(guiItem));
             slot++;
@@ -168,14 +167,8 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
 
         int slot = 0;
         for (final MenuItem guiItem : items) {
-            if (slot >= size) {
-                notAddedItems.add(guiItem);
-                continue;
-            }
-
-            while (occupiedSlots.contains(slot)) {
-                slot++;
-            }
+            slot = getSlot(occupiedSlots, slot);
+            if (isInvalidSlot(notAddedItems, slot, guiItem)) continue; // incase.
 
             itemMap.put(slot, guiItem);
             slot++;
@@ -187,6 +180,32 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
             return this.addItem(notAddedItems.toArray(new MenuItem[0]));
         }
         return (M) this;
+    }
+
+    private boolean isInvalidSlot(List<MenuItem> notAddedItems, int slot, MenuItem guiItem) {
+        if (slot >= size) {
+            notAddedItems.add(guiItem);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isInvalidSlot(List<ItemStack> notAddedItems, int slot, ItemStack guiItem) {
+        if (slot >= size) {
+            notAddedItems.add(guiItem);
+            return true;
+        }
+        return false;
+    }
+
+    private static int getSlot(Set<Integer> occupiedSlots, int slot) {
+        while (true) {
+            boolean contains = occupiedSlots.contains(slot);
+            if (!contains) break;
+            slot++;
+        }
+
+        return slot;
     }
 
     public M setItem(@NotNull Slot slot, ItemStack item) {
@@ -208,28 +227,6 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
 
     public M setItem(int slot, MenuItem item) {
         itemMap.put(slot, item);
-        return (M) this;
-    }
-
-    public M removeItem(@NotNull final MenuItem item) {
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            if (Objects.equals(item, itemMap.get(i))) {
-                itemMap.remove(i);
-                break;
-            }
-        }
-        return (M) this;
-    }
-
-    public M removeItem(@NotNull final ItemStack itemStack) {
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            if (Objects.equals(itemStack, itemMap.get(i).getItemStack())) {
-                itemMap.remove(i);
-                break;
-            }
-        }
         return (M) this;
     }
 
@@ -289,7 +286,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
         return null;
     }
 
-    public M removeItems(@NotNull final ItemStack... itemStacks) {
+    public M removeItem(@NotNull final ItemStack... itemStacks) {
         return removeItemStacks(Arrays.asList(itemStacks));
     }
 
@@ -301,65 +298,89 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
             if (item == null) continue;
 
             val itemStack = item.getItemStack();
-            if (set.contains(itemStack)) itemMap.remove(i);
+            if (set.contains(itemStack)) {
+                itemMap.remove(i);
+                inventory.remove(itemStack);
+            }
         }
         return (M) this;
     }
 
-    public M removeItems(@NotNull final MenuItem... itemStacks) {
-        return removeItems(Arrays.asList(itemStacks));
+    public M removeItem(@NotNull final MenuItem... items) {
+        Set<MenuItem> slots = ImmutableSet.copyOf(items);
+
+        int size = itemMap.size();
+        for (int i = 0; i < size; i++) {
+            MenuItem item = itemMap.get(i);
+            if (item != null && slots.contains(item)) {
+                itemMap.remove(i);
+                inventory.remove(item.getItemStack());
+            }
+        }
+        return (M) this;
     }
 
-    public M removeItems(@NotNull final List<MenuItem> itemStacks) {
+    @Override
+    public M removeItem(@NotNull final List<MenuItem> itemStacks) {
         Set<MenuItem> set = ImmutableSet.copyOf(itemStacks);
         int size = itemMap.size();
         for (int i = 0; i < size; i++) {
-            if (set.contains(itemMap.get(i))) itemMap.remove(i);
+            MenuItem item = itemMap.get(i);
+            if (set.contains(item)) {
+                itemMap.remove(i);
+                inventory.remove(item.getItemStack());
+            }
         }
         return (M) this;
     }
 
-    public M update() {
+    M update(Inventory inventory) {
         this.updating = true;
-        recreateItems();
-        List<HumanEntity> entities = ImmutableList.copyOf(inventory.getViewers());
+        recreateItems(inventory);
+        List<HumanEntity> entities = new ArrayList<>(inventory.getViewers());
         entities.forEach(e -> ((Player) e).updateInventory());
         this.updating = false;
         return (M) this;
     }
 
-    public void updatePer(long repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), this::update, 0, repeatTime);
+    @Override
+    public M update() {
+        return this.update(this.inventory);
     }
 
-    public void updatePer(Duration repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), this::update, 0, repeatTime.toMillis() / 50);
+    public void updatePer(long repeatTime) {
+        sch.runTaskTimer(Menus.plugin(), () -> update(), 0, repeatTime);
+    }
+
+    public void updatePer(@NotNull Duration repeatTime) {
+        sch.runTaskTimer(Menus.plugin(), () -> update(), 0, repeatTime.toMillis() / 50);
     }
 
     public void updatePer(long delay, long repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), this::update, delay, repeatTime);
+        sch.runTaskTimer(Menus.plugin(), () -> update(), delay, repeatTime);
     }
 
-    public void updatePer(Duration delay, Duration repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), this::update, delay.toMillis() / 50, repeatTime.toMillis() / 50);
+    public void updatePer(@NotNull Duration delay, @NotNull Duration repeatTime) {
+        sch.runTaskTimer(Menus.plugin(), () -> update(), delay.toMillis() / 50, repeatTime.toMillis() / 50);
     }
 
     public M updateTitle(String title) {
+        Inventory oldInventory = this.inventory;
         String colorizedTitle = translateAlternateColorCodes('&', title);
+        this.updating = true;
         Inventory updatedInventory = type == MenuType.CHEST
                 ? Bukkit.createInventory(this, size, colorizedTitle)
                 : Bukkit.createInventory(this, type.getType(), colorizedTitle);
         this.title = colorizedTitle;
         this.inventory = updatedInventory;
 
-        this.updating = true;
-        List<HumanEntity> entities = ImmutableList.copyOf(inventory.getViewers());
+        List<HumanEntity> entities = ImmutableList.copyOf(oldInventory.getViewers());
         entities.forEach(e -> e.openInventory(updatedInventory));
         this.updating = false;
         return (M) this;
     }
 
-    protected void recreateItems() {
+    protected void recreateItems(Inventory inventory) {
         int size = itemMap.size();
         for (int i = 0; i < size; i++) {
             MenuItem menuItem = itemMap.get(i);
