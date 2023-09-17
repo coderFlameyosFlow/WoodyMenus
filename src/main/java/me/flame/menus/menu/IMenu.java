@@ -105,20 +105,6 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
     M setItem(int slot, MenuItem item);
 
     /**
-     * remove the itemStack from the list of items in the menu.
-     * @param item the itemStack to remove
-     * @return the object for chaining
-     */
-    M removeItem(@NotNull final MenuItem item);
-
-    /**
-     * remove the itemStack from the list of items in the menu.
-     * @param itemStack the itemStack to remove
-     * @return the object for chaining
-     */
-    M removeItem(@NotNull final ItemStack itemStack);
-
-    /**
      * get the itemStack from the list of items in the menu.
      * @param i the index of the itemStack
      * @return the itemStack or null
@@ -202,7 +188,7 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
      * @param itemStacks the items to remove
      * @return the object for chaining
      */
-    M removeItems(@NotNull final ItemStack... itemStacks);
+    M removeItem(@NotNull final ItemStack... itemStacks);
 
     /**
      * Remove all the specified items from the inventory.
@@ -216,14 +202,14 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
      * @param itemStacks the items to remove
      * @return the object for chaining
      */
-    M removeItems(@NotNull final MenuItem... itemStacks);
+    M removeItem(@NotNull final MenuItem... itemStacks);
 
     /**
      * Remove all the specified items from the inventory.
      * @param itemStacks the items to remove
      * @return the object for chaining
      */
-    M removeItems(@NotNull final List<MenuItem> itemStacks);
+    M removeItem(@NotNull final List<MenuItem> itemStacks);
 
     /**
      * Update the inventory which recreates the items on default
