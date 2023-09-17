@@ -2,9 +2,11 @@ package me.flame.menus.menu;
 
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.modifiers.Modifier;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +78,7 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
         super(pageRows, title, EnumSet.noneOf(Modifier.class));
         this.uuid = uuid;
         this.player = Objects.requireNonNull(Bukkit.getPlayer(uuid));
-        this.mainInventory = PaginatedMenu.create(title, pageRows, pageCount, EnumSet.noneOf(Modifier.class));
+        this.mainInventory = PaginatedMenu.create(title, type, pageCount, EnumSet.noneOf(Modifier.class));
 
         this.pageRows = pageRows;
         this.pageSize = pageRows * 9;
@@ -90,9 +92,17 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
         super(type, title, EnumSet.noneOf(Modifier.class));
         this.uuid = uuid;
         this.player = Objects.requireNonNull(Bukkit.getPlayer(uuid));
-        this.mainInventory = PaginatedMenu.create(title, pageRows, pageCount, EnumSet.noneOf(Modifier.class));
+        this.mainInventory = PaginatedMenu.create(title, type, pageCount, EnumSet.noneOf(Modifier.class));
 
         this.pages = pageCount;
+    }
+
+    public <T extends Decorator> T getPageDecorator(Class<T> pageClass) {
+        return mainInventory.getPageDecorator(pageClass);
+    }
+
+    public PageDecoration getPageDecorator() {
+        return mainInventory.getPageDecorator();
     }
 
     /**
@@ -134,37 +144,35 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
     }
 
     @Override
-    public SeparatedPagedMenu removeItems(@NotNull final MenuItem... item) {
-        mainInventory.removeItems(item);
+    public SeparatedPagedMenu removeItem(@NotNull final MenuItem... item) {
+        mainInventory.removeItem(item);
+        return this;
+    }
+
+    /**
+     * @param itemStacks the items to remove 
+     * @return the object for chaining
+     */
+    @Override
+    public SeparatedPagedMenu removeItem(@NotNull List<MenuItem> itemStacks) {
+        mainInventory.removeItem(itemStacks.toArray(new MenuItem[0]));
         return this;
     }
 
     @Override
-    public SeparatedPagedMenu removeItems(@NotNull final ItemStack... item) {
-        mainInventory.removeItems(item);
-        return this;
-    }
-
-    @Override
-    public SeparatedPagedMenu removeItem(@NotNull final ItemStack item) {
+    public SeparatedPagedMenu removeItem(@NotNull final ItemStack... item) {
         mainInventory.removeItem(item);
         return this;
     }
 
     @Override
-    public SeparatedPagedMenu removeItem(@NotNull final MenuItem item) {
-        mainInventory.removeItem(item);
-        return this;
-    }
-
-    @Override
-    public SeparatedPagedMenu addItem(MenuItem... items) {
+    public SeparatedPagedMenu  addItem(MenuItem... items) {
         mainInventory.addItem(items);
         return this;
     }
 
     @Override
-    public SeparatedPagedMenu addItem(ItemStack... items) {
+    public SeparatedPagedMenu  addItem(ItemStack... items) {
         mainInventory.addItem(items);
         return this;
     }
@@ -176,19 +184,19 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
     }
 
     @Override
-    public SeparatedPagedMenu setItem(@NotNull Slot slot, MenuItem item) {
+    public SeparatedPagedMenu  setItem(@NotNull Slot slot, MenuItem item) {
         mainInventory.setItem(slot, item);
         return this;
     }
 
     @Override
-    public SeparatedPagedMenu setItem(int slot, ItemStack item) {
+    public SeparatedPagedMenu  setItem(int slot, ItemStack item) {
         mainInventory.setItem(slot, item);
         return this;
     }
 
     @Override
-    public SeparatedPagedMenu setItem(@NotNull Slot slot, ItemStack item) {
+    public SeparatedPagedMenu  setItem(@NotNull Slot slot, ItemStack item) {
         mainInventory.setItem(slot, item);
         return this;
     }
@@ -269,8 +277,14 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
     }
 
     @Override
-    protected void recreateItems() {
-        mainInventory.recreateItems();
+    protected void recreateItems(Inventory inventory) {
+        mainInventory.recreateItems(inventory);
+    }
+
+    @Override
+    public SeparatedPagedMenu update() {
+        mainInventory.recreateItems(inventory);
+        return this;
     }
 
     /**
