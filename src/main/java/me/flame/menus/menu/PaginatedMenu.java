@@ -37,7 +37,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
 
     private static final BukkitScheduler sch = Bukkit.getScheduler();
 
-    public PaginatedMenu updateTitle(String title) {
+    PaginatedMenu updateTitle(String title, Inventory inventory) {
         String colorizedTitle = translateAlternateColorCodes('&', title);
         Inventory updatedInventory = type == MenuType.CHEST
                 ? Bukkit.createInventory(this, size, colorizedTitle)
@@ -52,6 +52,10 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         return this;
     }
 
+    public PaginatedMenu updateTitle(String title) {
+        return this.updateTitle(title, getInventory());
+    }
+
     public <T extends Decorator> T getPageDecorator(Class<T> pageClass) {
         return pageClass.cast(pageDecorator);
     }
@@ -62,16 +66,6 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
 
     public void addPage() {
         pageList.add(Page.of(this));
-    }
-
-    @Override
-    public PaginatedMenu update() {
-        this.updating = true;
-        this.recreateItems();
-        List<HumanEntity> entities = ImmutableList.copyOf(inventory.getViewers());
-        entities.forEach(e -> ((Player) e).updateInventory());
-        this.updating = false;
-        return this;
     }
 
     /**
@@ -123,6 +117,20 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     public static PaginatedMenu create(String title, MenuType type, int pages, EnumSet<Modifier> modifiers) {
         return new PaginatedMenu(type, pages, title, modifiers);
     }
+    
+    PaginatedMenu update(Inventory inventory) {
+    	this.updating = true;
+    	recreateItems(inventory);
+    	List<HumanEntity> entities = new ArrayList<>(inventory.getViewers());
+    	entities.forEach(e -> ((Player) e).updateInventory());
+    	this.updating = false;
+    	return this;
+	}
+
+    @Override
+    public PaginatedMenu update() {
+    	return this.update(getInventory());
+	}
 
     /**
      * Sets the next page item for the given slot with the provided item stack.
@@ -267,25 +275,23 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
     }
 
     @Override
-    public PaginatedMenu removeItems(@NotNull final MenuItem... item) {
+    public PaginatedMenu removeItem(@NotNull final MenuItem... item) {
         currentPage.removeItem(item);
         return this;
     }
 
+    /**
+     * @param itemStacks the items to remove 
+     * @return the object for chaining
+     */
     @Override
-    public PaginatedMenu removeItems(@NotNull final ItemStack... item) {
-        currentPage.removeItem(item);
+    public PaginatedMenu removeItem(@NotNull List<MenuItem> itemStacks) {
+        currentPage.removeItem(itemStacks.toArray(new MenuItem[0]));
         return this;
     }
 
     @Override
-    public PaginatedMenu removeItem(@NotNull final ItemStack item) {
-        currentPage.removeItem(item);
-        return this;
-    }
-
-    @Override
-    public PaginatedMenu removeItem(@NotNull final MenuItem item) {
+    public PaginatedMenu removeItem(@NotNull final ItemStack... item) {
         currentPage.removeItem(item);
         return this;
     }
@@ -378,7 +384,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         this.pageNum = openPage;
         this.currentPage = pageList.get(openPage);
 
-        recreateItems();
+        update();
         player.openInventory(inventory);
     }
 
@@ -411,8 +417,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         return pageList.size();
     }
 
-    @Override
-    protected void recreateItems() {
+    protected void recreateItems(Inventory inventory) {
         final int endIndex = currentPage.size();
 
         for (int i = 0; i < endIndex; i++) {
@@ -432,7 +437,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         pageNum++;
         this.currentPage = pageList.get(pageNum);
 
-        recreateItems();
+        update();
         return true;
     }
 
@@ -447,7 +452,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         pageNum--;
         this.currentPage = pageList.get(pageNum);
 
-        recreateItems();
+        update();
         return true;
     }
 
@@ -462,7 +467,7 @@ public final class PaginatedMenu extends BaseMenu<PaginatedMenu> {
         this.pageNum = pageNum;
         this.currentPage = pageList.get(pageNum);
 
-        recreateItems();
+        update();
         return true;
     }
 
