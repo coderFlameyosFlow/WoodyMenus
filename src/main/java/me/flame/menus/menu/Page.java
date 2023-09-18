@@ -5,6 +5,7 @@ import lombok.Setter;
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.iterator.PageIterator;
 
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -153,9 +154,16 @@ public final class Page implements Iterable<MenuItem> {
         Set<MenuItem> slots = ImmutableSet.copyOf(items);
 
         int size = itemMap.size();
+        Inventory inventory = holder.getInventory();
         for (int i = 0; i < size; i++) {
             MenuItem item = itemMap.get(i);
-            if (item != null && slots.contains(item)) itemMap.remove(i);
+            if (item == null) continue;
+
+            ItemStack itemStack = item.getItemStack();
+            if (slots.contains(item)) {
+                itemMap.remove(i);
+                inventory.remove(itemStack);
+            }
         }
     }
 
@@ -167,9 +175,16 @@ public final class Page implements Iterable<MenuItem> {
         Set<ItemStack> slots = ImmutableSet.copyOf(items);
 
         int size = itemMap.size();
+        Inventory inventory = holder.getInventory();
         for (int i = 0; i < size; i++) {
             MenuItem item = itemMap.get(i);
-            if (item != null && slots.contains(item.getItemStack())) itemMap.remove(i);
+            if (item == null) continue;
+
+            ItemStack itemStack = item.getItemStack();
+            if (slots.contains(itemStack)) {
+                itemMap.remove(i);
+                inventory.remove(itemStack);
+            }
         }
     }
 
