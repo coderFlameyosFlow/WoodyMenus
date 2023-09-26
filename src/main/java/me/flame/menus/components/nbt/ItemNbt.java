@@ -1,9 +1,7 @@
 package me.flame.menus.components.nbt;
 
-import me.flame.menus.menu.Menus;
-import me.flame.menus.util.VersionHelper;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.java.JavaPlugin;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -18,9 +16,9 @@ public final class ItemNbt {
     public static void wrapper(NbtWrapper w) {
         wrapper = w;
     }
-
+    
     public static NbtWrapper wrapper() {
-        return wrapper;
+    	return wrapper;
     }
 
     /**
