@@ -2,8 +2,8 @@ package me.flame.menus.menu;
 
 import me.flame.menus.components.nbt.ItemNbt;
 import me.flame.menus.components.nbt.LegacyNbt;
-import me.flame.menus.components.nbt.NbtWrapper;
 import me.flame.menus.components.nbt.Pdc;
+import me.flame.menus.menu.animation.Animation;
 import me.flame.menus.util.VersionHelper;
 
 import org.bukkit.Bukkit;
@@ -25,8 +25,10 @@ public final class Menus {
      */
     public static void init(Plugin p) {
         plugin = p;
+        Animation.init(p);
+        BaseMenu.init(p);
         ItemNbt.wrapper(VersionHelper.IS_PDC_VERSION ? new Pdc(p) : new LegacyNbt());
-        Bukkit.getPluginManager().registerEvents(new MenuListeners(), p);
+        Bukkit.getPluginManager().registerEvents(new MenuListeners(p), p);
     }
 
     /**
