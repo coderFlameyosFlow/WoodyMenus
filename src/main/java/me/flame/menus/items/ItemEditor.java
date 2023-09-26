@@ -1,7 +1,9 @@
 package me.flame.menus.items;
 
+import me.flame.menus.util.ItemResponse;
+import me.flame.menus.util.VersionHelper;
+
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -11,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
 
@@ -24,7 +26,7 @@ public final class ItemEditor {
     private final MenuItem menuItem;
 
     @NotNull
-    private Consumer<InventoryClickEvent> clickAction;
+    private CompletableFuture<ItemResponse> clickAction;
 
     private final ItemMeta meta;
 
@@ -37,8 +39,6 @@ public final class ItemEditor {
         this.meta = this.item.getItemMeta();
         this.hasNoItemMeta = this.meta == null;
     }
-
-    public static final List<String> emptyLore = Collections.emptyList();
 
     /**
      * Edits the name of the itemStack to whatever the provided title is.
@@ -105,13 +105,13 @@ public final class ItemEditor {
      * @param lore the new lore of the itemStack
      * @return the builder for chaining
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach") // slight performance improvement
     public ItemEditor setLore(List<String> lore) {
         if (this.hasNoItemMeta) return this;
         int loreSize = lore.size();
         List<String> ogLore = new ArrayList<>(loreSize);
-        for (int i = 0; i < loreSize; i++)
+        for (int i = 0; i < loreSize; i++) {
             ogLore.add(translateAlternateColorCodes('&', lore.get(i)));
+        }
         this.meta.setLore(ogLore);
         return this;
     }
@@ -149,7 +149,7 @@ public final class ItemEditor {
      */
     public ItemEditor emptyLore() {
         if (this.hasNoItemMeta) return this;
-        this.meta.setLore(emptyLore);
+        this.meta.setLore(Collections.emptyList());
         return this;
     }
 
@@ -213,8 +213,24 @@ public final class ItemEditor {
         return this;
     }
 
-    public ItemEditor setAction(Consumer<InventoryClickEvent> event) {
+    public ItemEditor setCustomModelData(Integer customModelData) {
+        if (VersionHelper.IS_CUSTOM_MODEL_DATA)
+            this.meta.setCustomModelData(customModelData);
+        return this;
+    }
+
+    public ItemEditor setAction(@NotNull ItemResponse event) {
+        this.clickAction = CompletableFuture.completedFuture(event);
+        return this;
+    }
+
+    public ItemEditor setActionAsync(@NotNull CompletableFuture<ItemResponse> event) {
         this.clickAction = event;
+        return this;
+    }
+
+    public ItemEditor setActionAsync(@NotNull ItemResponse event) {
+        this.clickAction = CompletableFuture.supplyAsync(() -> event);
         return this;
     }
 
