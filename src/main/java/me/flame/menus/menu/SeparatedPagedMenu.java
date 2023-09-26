@@ -16,10 +16,10 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * GUI that allows you to have multiple pages
+ * Separated Menu that allows you to have multiple pages
  */
 @SuppressWarnings("unused")
-public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
+public final class SeparatedPagedMenu extends BaseMenu {
     @NotNull
     private final UUID uuid;
 
@@ -139,66 +139,51 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
     }
 
     @Override
-    public void updateItem(@NotNull Slot slot, @NotNull final MenuItem item) {
-        updateItem(slot.getSlot(), item);
-    }
-
-    @Override
-    public SeparatedPagedMenu removeItem(@NotNull final MenuItem... item) {
+    public void removeItem(@NotNull final MenuItem... item) {
         mainInventory.removeItem(item);
-        return this;
     }
 
     /**
      * @param itemStacks the items to remove 
-     * @return the object for chaining
      */
     @Override
-    public SeparatedPagedMenu removeItem(@NotNull List<MenuItem> itemStacks) {
+    public void removeItem(@NotNull List<MenuItem> itemStacks) {
         mainInventory.removeItem(itemStacks.toArray(new MenuItem[0]));
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu removeItem(@NotNull final ItemStack... item) {
+    public void removeItem(@NotNull final ItemStack... item) {
         mainInventory.removeItem(item);
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu  addItem(MenuItem... items) {
+    public void addItem(MenuItem... items) {
         mainInventory.addItem(items);
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu  addItem(ItemStack... items) {
+    public void addItem(ItemStack... items) {
         mainInventory.addItem(items);
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu setItem(int slot, MenuItem item) {
+    public void setItem(int slot, MenuItem item) {
         mainInventory.setItem(slot, item);
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu  setItem(@NotNull Slot slot, MenuItem item) {
+    public void setItem(@NotNull Slot slot, MenuItem item) {
         mainInventory.setItem(slot, item);
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu  setItem(int slot, ItemStack item) {
+    public void setItem(int slot, ItemStack item) {
         mainInventory.setItem(slot, item);
-        return this;
     }
 
     @Override
-    public SeparatedPagedMenu  setItem(@NotNull Slot slot, ItemStack item) {
+    public void setItem(@NotNull Slot slot, ItemStack item) {
         mainInventory.setItem(slot, item);
-        return this;
     }
 
     @Override
@@ -237,6 +222,13 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
      * @param openPage The specific page to open at
      */
     public void open(final int openPage) {
+        mainInventory.open(player, openPage);
+    }
+
+    /**
+     * Opens the GUI to a specific page for the given player
+     */
+    public void open() {
         mainInventory.open(player);
     }
 
@@ -282,9 +274,8 @@ public final class SeparatedPagedMenu extends BaseMenu<SeparatedPagedMenu> {
     }
 
     @Override
-    public SeparatedPagedMenu update() {
-        mainInventory.recreateItems(inventory);
-        return this;
+    public void update() {
+        mainInventory.update();
     }
 
     /**
