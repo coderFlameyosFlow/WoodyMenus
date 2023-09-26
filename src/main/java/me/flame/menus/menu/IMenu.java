@@ -10,7 +10,6 @@ import org.bukkit.inventory.ItemStack;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
 
 import java.time.Duration;
 import java.util.*;
@@ -18,7 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 @SuppressWarnings({"unused", "UnusedReturnValue"})
-public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, InventoryHolder {
+public interface IMenu extends Iterable<MenuItem>, InventoryHolder {
     /**
      * Get a LIST iterator of the items in the menu
      * @return the list iterator
@@ -61,48 +60,42 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
     /**
      * Add a list of items to the list of items in the menu.
      * @param items varargs of itemStack stacks
-     * @return the object for chaining
      */
-    M addItem(@NotNull final ItemStack... items);
+    void addItem(@NotNull final ItemStack... items);
 
     /**
      * Add a list of items to the list of items in the menu.
      * @param items the items
-     * @return the object for chaining
      */
-    M addItem(@NotNull final MenuItem... items);
+    void addItem(@NotNull final MenuItem... items);
 
     /**
      * Add the itemStack to the list of items in the menu.
      * <p>
      * As this is the itemStack to add, it's not a menu itemStack, so it'd be converted to a MenuItem first
      * @param item the itemStack to add
-     * @return the object for chaining
      */
-    M setItem(@NotNull Slot slot, ItemStack item);
+    void setItem(@NotNull Slot slot, ItemStack item);
 
     /**
      * Add the itemStack to the list of items in the menu.
      * @param item the itemStack to add
-     * @return the object for chaining
      */
-    M setItem(@NotNull Slot slot, MenuItem item);
+    void setItem(@NotNull Slot slot, MenuItem item);
 
     /**
      * Add the itemStack to the list of items in the menu.
      * <p>
      * As this is the itemStack to add, it's not a menu itemStack, so it'd be converted to a MenuItem first
      * @param item the itemStack to add
-     * @return the object for chaining
      */
-    M setItem(int slot, ItemStack item);
+    void setItem(int slot, ItemStack item);
     
     /**
      * Add the itemStack to the list of items in the menu.
      * @param item the itemStack to add
-     * @return the object for chaining
      */
-    M setItem(int slot, MenuItem item);
+    void setItem(int slot, MenuItem item);
 
     /**
      * get the itemStack from the list of items in the menu.
@@ -186,36 +179,31 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
     /**
      * Remove all the specified items from the inventory.
      * @param itemStacks the items to remove
-     * @return the object for chaining
      */
-    M removeItem(@NotNull final ItemStack... itemStacks);
+    void removeItem(@NotNull final ItemStack... itemStacks);
 
     /**
      * Remove all the specified items from the inventory.
      * @param itemStacks the items to remove
-     * @return the object for chaining
      */
-    M removeItemStacks(@NotNull final List<ItemStack> itemStacks);
+    void removeItemStacks(@NotNull final List<ItemStack> itemStacks);
 
     /**
      * Remove all the specified items from the inventory.
      * @param itemStacks the items to remove
-     * @return the object for chaining
      */
-    M removeItem(@NotNull final MenuItem... itemStacks);
+    void removeItem(@NotNull final MenuItem... itemStacks);
 
     /**
      * Remove all the specified items from the inventory.
      * @param itemStacks the items to remove
-     * @return the object for chaining
      */
-    M removeItem(@NotNull final List<MenuItem> itemStacks);
+    void removeItem(@NotNull final List<MenuItem> itemStacks);
 
     /**
      * Update the inventory which recreates the items on default
-     * @return the object for chaining
      */
-    M update();
+    void update();
 
     /**
      * Updates the menu every X ticks (repeatTime)
@@ -250,17 +238,15 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
     /**
      * Update the inventory with the title (RE-OPENS THE INVENTORY)
      * @param title the new title
-     * @return the object for chaining
      */
-    M updateTitle(String title);
+    void updateTitle(String title);
 
     /**
      * Open the inventory for the provided player.
      * @apiNote Will not work if the player is sleeping.
      * @param entity the provided entity to open the inventory for.
-     * @return the object for chaining
      */
-    M open(@NotNull HumanEntity entity);
+    void open(@NotNull HumanEntity entity);
 
     boolean addModifier(Modifier modifier);
 
@@ -287,23 +273,6 @@ public interface IMenu<M extends IMenu<M>> extends Iterable<MenuItem>, Inventory
      * @param itemStack The {@link ItemStack} to replace in the original one in the {@link MenuItem}.
      */
     void updateItem(@NotNull Slot slot, @NotNull final ItemStack itemStack);
-
-
-    /**
-     * Alternative {@link #updateItem(int, ItemStack)} that takes <i>ROWS</i> and <i>COLUMNS</i> instead of slots. also using MenuItem
-     *
-     * @param slot      The row and col of the slot.
-     * @param itemStack The {@link ItemStack} to replace in the original one in the {@link MenuItem}.
-     */
-    void updateItem(@NotNull Slot slot, @NotNull final MenuItem itemStack);
-
-    /**
-     * get the map of items in the menu
-     * <p>The returned map is unmodifiable; {@link UnsupportedOperationException} is thrown when attempting to modify it</p>
-     * @return the map of items in the menu which is unmodifiable
-     */
-    @NotNull
-    @Unmodifiable Map<Integer, MenuItem> getItemMap();
 
     void clear();
 }
