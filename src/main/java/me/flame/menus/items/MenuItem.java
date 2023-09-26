@@ -1,6 +1,5 @@
 package me.flame.menus.items;
 
-import jdk.internal.vm.annotation.ForceInline;
 import lombok.Getter;
 import lombok.Setter;
 import me.flame.menus.components.nbt.ItemNbt;
@@ -159,7 +158,6 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
         }
     }
 
-    @ForceInline
     public CompletableFuture<ActionResponse> click(final int slot, final ClickActionEvent event) {
         return async
                 ? clickAction.thenApplyAsync(ca -> ca.apply(slot, event)) // this is what's executing async btw
