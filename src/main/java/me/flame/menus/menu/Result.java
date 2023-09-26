@@ -1,9 +1,15 @@
 package me.flame.menus.menu;
 
 import lombok.NonNull;
+
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Results of actions.
+ * @author flameyosflow
+ * @since 1.3.4
+ */
 @SuppressWarnings({ "unused", "StringEquality" })
 public final class Result {
     public String result;
@@ -23,7 +29,7 @@ public final class Result {
     /**
      * Generates a new Result object with the value DENIED.
      *
-     * @return         	A new Result object with the value DENIED.
+     * @return A new Result object with the value DENIED.
      */
     @NotNull
     @Contract(value = " -> new", pure = true)
@@ -34,7 +40,7 @@ public final class Result {
     /**
      * Generates a new Result object with the value ALLOWED.
      *
-     * @return         	A new Result object with the value ALLOWED.
+     * @return A new Result object with the value ALLOWED.
      */
     @NotNull
     @Contract(value = " -> new", pure = true)
@@ -45,7 +51,7 @@ public final class Result {
     /**
      * Sets the result of the operation.
      *
-     * @param  r the result to be set
+     * @param r the result to be set
      */
     public void set(@NonNull Result r) {
         this.result = r.result;
@@ -57,5 +63,10 @@ public final class Result {
 
     public boolean isAllowed() {
         return result == ALLOWED;
+    }
+
+    @Override
+    public int hashCode() {
+        return result.hashCode();
     }
 }
