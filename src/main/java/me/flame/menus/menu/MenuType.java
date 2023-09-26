@@ -1,14 +1,13 @@
 package me.flame.menus.menu;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import org.bukkit.event.inventory.InventoryType;
 
 import lombok.Getter;
 
+import java.io.Serializable;
+
 @Getter
-@AllArgsConstructor(access = AccessLevel.PACKAGE)
-public enum MenuType {
+public enum MenuType implements Serializable {
     CHEST(InventoryType.CHEST, 9),
     FURNACE(InventoryType.FURNACE, 3),
     WORKBENCH(InventoryType.WORKBENCH, 9),
@@ -18,4 +17,9 @@ public enum MenuType {
 
     private final InventoryType type;
     private final int limit;
+
+    MenuType(InventoryType type, int limit) {
+        this.type = type;
+        this.limit = limit;
+    }
 }
