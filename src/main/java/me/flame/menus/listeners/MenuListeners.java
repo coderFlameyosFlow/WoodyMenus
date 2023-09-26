@@ -1,29 +1,39 @@
 package me.flame.menus.listeners;
 
-import lombok.val;
-
+import lombok.AllArgsConstructor;
 import me.flame.menus.components.nbt.ItemNbt;
+import me.flame.menus.events.ClickActionEvent;
+import me.flame.menus.events.OpenMenuEvent;
 import me.flame.menus.items.MenuItem;
+import me.flame.menus.menu.ActionResponse;
 import me.flame.menus.menu.BaseMenu;
-import me.flame.menus.menu.Menus;
+import me.flame.menus.menu.IMenu;
 import me.flame.menus.menu.Result;
 
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.*;
+
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryType;
+
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.EnumSet;
-import java.util.Set;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 
+@AllArgsConstructor
 public final class MenuListeners implements Listener {
     private static final EnumSet<InventoryAction> TAKE = EnumSet.of(
             InventoryAction.PICKUP_ONE,
@@ -54,7 +64,7 @@ public final class MenuListeners implements Listener {
             InventoryAction.DROP_ALL_CURSOR
     );
 
-    private final Plugin plugin = Menus.plugin();
+    private final Plugin plugin;
 
     private static final InventoryType PLAYER = InventoryType.PLAYER;
     private static final InventoryAction OTHER_INV = InventoryAction.MOVE_TO_OTHER_INVENTORY;
@@ -62,63 +72,67 @@ public final class MenuListeners implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        Inventory inv = event.getInventory();
-        InventoryHolder holder = inv.getHolder();
-        if (!(holder instanceof BaseMenu<?>)) return;
+        InventoryView view = event.getView();
+        Inventory inventory = view.getTopInventory();
+        InventoryHolder holder = inventory.getHolder();
+        if (!(holder instanceof BaseMenu)) return;
 
-        BaseMenu<?> m = (BaseMenu<?>) holder;
-        Inventory ci = event.getClickedInventory();
+        BaseMenu menu = ((BaseMenu) holder);
+        Inventory clickedInventory = event.getClickedInventory();
         InventoryAction action = event.getAction();
 
-        if (ci == null) {
-            val outsideClick = m.getOutsideClickAction();
-            if (outsideClick != null) outsideClick.accept(event);
+        int slot = event.getSlot();
+        ItemStack current = event.getCurrentItem();
+
+        ClickActionEvent e = new ClickActionEvent(
+            view, event.getSlotType(), event.getRawSlot(),
+            slot, event.getClick(), current, action
+        );
+
+        if (clickedInventory == null) {
+            menu.click(e, BaseMenu.Click.OUTSIDE);
             return;
         }
 
-        if (modifierDetected(m, action, ci.getType(), inv.getType()))
+        if (modifierDetected(menu, action, clickedInventory.getType(), inventory.getType()))
             event.setResult(Event.Result.DENY);
-        executeActions(event, m, inv, ci);
-        executeItem(event, event.getCurrentItem(), m, event.getSlot());
+        executeActions(e, view, menu, inventory, clickedInventory);
+        executeItem(e, menu, current, slot);
     }
 
     @EventHandler
     public void onGuiDrag(InventoryDragEvent event) {
-        val inventory = event.getInventory();
-        val holder = inventory.getHolder();
-        if (!(holder instanceof BaseMenu<?>)) return;
-        val menu = (BaseMenu<?>) holder;
+        Inventory inventory = event.getInventory();
+        InventoryHolder holder = inventory.getHolder();
+        if (!(holder instanceof BaseMenu)) return;
+        BaseMenu menu = ((BaseMenu) holder);
 
-        val rawSlots = event.getRawSlots();
-        if (!menu.areItemsPlaceable() || isDraggingOnGui(inventory, rawSlots))
+        if (!menu.areItemsPlaceable() || isDraggingOnGui(inventory, event.getRawSlots()))
             event.setResult(Event.Result.DENY);
-        val dragAction = menu.getDragAction();
-        dragAction.accept(event);
+        menu.click(event);
     }
 
     @EventHandler
     public void onGuiClose(InventoryCloseEvent e) {
-        val holder = e.getInventory().getHolder();
-        if (!(holder instanceof BaseMenu<?>)) return;
-        val menu = (BaseMenu<?>) holder;
+        InventoryHolder holder = e.getInventory().getHolder();
+        if (!(holder instanceof BaseMenu)) return;
+        BaseMenu menu = ((BaseMenu) holder);
 
         Result result = Result.allowed();
-        val closeAction = menu.getCloseAction();
-        if (!menu.isUpdating() && closeAction != null) closeAction.accept(e, result);
+        menu.click(e, result);
 
-        if (result.equals(Result.denied())) {
+        if (result.equals(Result.denied()))
             SCHEDULER.runTaskLater(plugin, () -> menu.open(e.getPlayer()), 1);
-        }
     }
 
     @EventHandler
     public void onGuiOpen(InventoryOpenEvent event) {
-        val holder = event.getInventory().getHolder();
-        if (!(holder instanceof BaseMenu<?>)) return;
-        val menu = (BaseMenu<?>) holder;
+        InventoryView view = event.getView();
+        InventoryHolder holder = view.getTopInventory().getHolder();
+        if (!(holder instanceof BaseMenu)) return;
+        BaseMenu menu = ((BaseMenu) holder);
 
-        val openAction = menu.getOpenAction();
-        if (!menu.isUpdating()) openAction.accept(event);
+        menu.click(new OpenMenuEvent(view));
     }
 
     private static boolean isTakeItemEvent(InventoryAction action, InventoryType ciType, InventoryType type) {
@@ -143,7 +157,7 @@ public final class MenuListeners implements Listener {
     private static boolean isOtherEvent(InventoryAction action, InventoryType type) {
         return isOtherAction(action) && (type != PLAYER);
     }
-    private static boolean isDraggingOnGui(Inventory inventory, Set<Integer> rawSlots) {
+    private static boolean isDraggingOnGui(Inventory inventory, Iterable<Integer> rawSlots) {
         final int topSlots = inventory.getSize();
         for (int slot : rawSlots) if (slot < topSlots) return true;
         return false;
@@ -153,33 +167,54 @@ public final class MenuListeners implements Listener {
         return action == InventoryAction.CLONE_STACK || action == InventoryAction.UNKNOWN;
     }
 
-    private static void executeActions(InventoryClickEvent event, BaseMenu<?> m, Inventory inv, Inventory ci) {
-        Consumer<InventoryClickEvent> topClick = m.getTopClickAction(),
-                bottomClick = m.getBottomClickAction(), defaultClick = m.getClickAction();
-
-        if (inv.equals(ci)) topClick.accept(event);
-        else if (event.getView().getBottomInventory().equals(ci)) bottomClick.accept(event);
-
-        defaultClick.accept(event);
+    private static void executeActions(ClickActionEvent event,
+                                       InventoryView view,
+                                       BaseMenu menu,
+                                       Inventory inventory,
+                                       Inventory clickedInventory) {
+        if (inventory.equals(clickedInventory)) {
+            menu.click(event, BaseMenu.Click.TOP);
+        } else if (view.getBottomInventory().equals(clickedInventory)) {
+            menu.click(event, BaseMenu.Click.BOTTOM);
+        }
+        menu.click(event, BaseMenu.Click.DEFAULT);
     }
 
-    private static void executeItem(InventoryClickEvent event, ItemStack it, BaseMenu<?> m, int num) {
-        MenuItem menuItem = m.getItem(num);
+    private static void executeItem(ClickActionEvent actionEvent, IMenu menu, ItemStack it, int num) {
+        MenuItem menuItem = menu.getItem(num);
 
         if (it == null || menuItem == null) return;
         final String nbt = ItemNbt.getString(it, "woody-menu");
         if (nbt == null || !nbt.equals(menuItem.getUniqueId().toString())) return;
 
-        menuItem.click(event);
+        CompletableFuture<ActionResponse> response = menuItem.click(num, actionEvent);
+        response.thenAccept(e -> attemptRetry(num, menuItem, actionEvent, e));
     }
 
-    private static boolean modifierDetected(BaseMenu<?> m, InventoryAction action,
-                          InventoryType ciType, InventoryType invType) {
-        boolean unremovable = !m.areItemsRemovable();
-        return ((!m.areItemsPlaceable() && isPlaceItemEvent(action, ciType, invType)) ||
+    private static void attemptRetry(int num, MenuItem menuItem, ClickActionEvent actionEvent, ActionResponse e) {
+        if (e.isRetry()) {
+            CompletableFuture<ActionResponse> futureResponse = menuItem.click(num, actionEvent);
+            futureResponse.thenCompose(response -> handleRetry(num, menuItem, actionEvent, response));
+        }
+    }
+
+    private static CompletableFuture<ActionResponse> handleRetry(int num, MenuItem menuItem, ClickActionEvent actionEvent, ActionResponse response) {
+        if (response.isRetry()) {
+            return menuItem.isAsync() 
+            		? menuItem.click(num, actionEvent)
+                    		  .thenComposeAsync(e -> handleRetry(num, menuItem, actionEvent, response))
+                    : menuItem.click(num, actionEvent)
+                    		  .thenCompose(e -> handleRetry(num, menuItem, actionEvent, response))
+        }
+        return CompletableFuture.completedFuture(response);
+    }
+
+    private static boolean modifierDetected(IMenu menu, InventoryAction action, InventoryType ciType, InventoryType invType) {
+        boolean unremovable = !menu.areItemsRemovable();
+        return ((!menu.areItemsPlaceable() && isPlaceItemEvent(action, ciType, invType)) ||
                 (unremovable && isTakeItemEvent(action, ciType, invType)) ||
-                (!m.areItemsSwappable() && isSwapItemEvent(action, ciType, invType)) ||
+                (!menu.areItemsSwappable() && isSwapItemEvent(action, ciType, invType)) ||
                 (unremovable && isDropItemEvent(action, invType)) ||
-                (!m.areItemsCloneable() && isOtherEvent(action, invType)));
+                (!menu.areItemsCloneable() && isOtherEvent(action, invType)));
     }
 }
