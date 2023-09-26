@@ -5,8 +5,9 @@ import com.google.common.collect.ImmutableSet;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
 
+import me.flame.menus.events.ClickActionEvent;
+import me.flame.menus.events.OpenMenuEvent;
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.fillers.Filler;
 import me.flame.menus.menu.fillers.MenuFiller;
@@ -21,6 +22,7 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -29,6 +31,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -36,10 +39,15 @@ import java.util.stream.Stream;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
 
+/**
+ * BaseMenu; an abstraction for all other Menus.
+ * @author flameyosflow
+ * @since 1.0.0
+ */
 @Getter
 @ApiStatus.NonExtendable
-@SuppressWarnings({ "unused", "BooleanMethodIsAlwaysInverted", "unchecked", "UnusedReturnValue" })
-public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
+@SuppressWarnings({ "unused", "BooleanMethodIsAlwaysInverted", "UnusedReturnValue" })
+public abstract class BaseMenu implements IMenu, RandomAccess {
     @NotNull
     protected Inventory inventory;
 
@@ -50,9 +58,6 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
     protected final EnumSet<Modifier> modifiers;
 
     @NotNull
-    protected final Map<Integer, MenuItem> itemMap;
-
-    @NotNull
     private final MenuIterator iterator = new MenuIterator(IterationDirection.HORIZONTAL, this);
 
     @NotNull
@@ -61,19 +66,57 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
     @NotNull
     private static final BukkitScheduler sch = Bukkit.getScheduler();
 
-    protected @Setter MenuFiller defaultFiller = Filler.from(this);
+    @Setter
+    protected MenuFiller defaultFiller = Filler.from(this);
+
+    @Setter
+    protected boolean dynamicSizing = false, updating = false;
 
     protected int rows = 1, size;
 
-    protected @Setter boolean dynamicSizing = false, updating = false;
+    protected MenuItem[] itemMap;
 
-    private @Setter Consumer<InventoryClickEvent> outsideClickAction = event -> {};
-    private @Setter Consumer<InventoryClickEvent> bottomClickAction = event -> {};
-    private @Setter Consumer<InventoryClickEvent> topClickAction = event -> {};
-    private @Setter Consumer<InventoryClickEvent> clickAction = event -> {};
+    protected static Plugin plugin;
+
+    public static void init(Plugin p) {
+        plugin = p;
+    }
+
+    private @Setter Consumer<ClickActionEvent> outsideClickAction = event -> {};
+    private @Setter Consumer<ClickActionEvent> bottomClickAction = event -> {};
+    private @Setter Consumer<ClickActionEvent> topClickAction = event -> {};
+    private @Setter Consumer<ClickActionEvent> clickAction = event -> {};
     private @Setter BiConsumer<InventoryCloseEvent, Result> closeAction = (event, result) -> {};
-    private @Setter Consumer<InventoryOpenEvent> openAction = event -> {};
+    private @Setter Consumer<OpenMenuEvent> openAction = event -> {};
     private @Setter Consumer<InventoryDragEvent> dragAction = event -> {};
+
+    private void remove(int index) {
+        int length = this.itemMap.length;
+        if (index <= 0 || index >= length) return;
+
+        itemMap[index] = null;
+    }
+
+    public void click(ClickActionEvent event, Click click) {
+        switch (click) {
+            case OUTSIDE: outsideClickAction.accept(event);
+            case BOTTOM: bottomClickAction.accept(event);
+            case TOP: topClickAction.accept(event);
+            default: clickAction.accept(event);
+        }
+    }
+
+    public void click(InventoryDragEvent event) {
+        dragAction.accept(event);
+    }
+
+    public void click(OpenMenuEvent event) {
+        if (!updating) openAction.accept(event);
+    }
+
+    public void click(InventoryCloseEvent event, Result result) {
+        if (!updating) closeAction.accept(event, result);
+    }
 
     public BaseMenu(int rows, String title, EnumSet<Modifier> modifiers) {
         this(rows, title, modifiers, true);
@@ -87,7 +130,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
         this.rows = rows;
         this.title = colorize ? translateAlternateColorCodes('&', title) : title;
         this.size = rows * 9;
-        this.itemMap = new HashMap<>(54);
+        this.itemMap = new MenuItem[size];
         this.inventory = Bukkit.createInventory(this, size, title);
     }
 
@@ -96,7 +139,7 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
         this.modifiers = modifiers;
         this.title = colorize ? translateAlternateColorCodes('&', title) : title;
         this.size = type.getLimit();
-        this.itemMap = new HashMap<>(size);
+        this.itemMap = new MenuItem[size];
         this.inventory = Bukkit.createInventory(this, type.getType(), title);
     }
 
@@ -123,152 +166,150 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
     }
 
     public Stream<MenuItem> stream() {
-        return itemMap.values().stream();
+        return Arrays.stream(itemMap);
     }
 
     public Stream<MenuItem> parallelStream() {
-        return itemMap.values().parallelStream();
+        return Arrays.stream(itemMap).parallel();
     }
 
     public void recreateInventory() {
         this.rows++;
         this.size = rows * 9;
-        inventory = Bukkit.createInventory(this, size, title);
+        this.inventory = Bukkit.createInventory(this, this.size, this.title);
+
+        MenuItem[] newItemArray = new MenuItem[size];
+        System.arraycopy(itemMap, 0, newItemArray, 0, size);
+        this.itemMap = newItemArray;
     }
 
     public List<HumanEntity> getViewers() {
         return inventory.getViewers();
     }
 
-    public M addItem(@NotNull final ItemStack... items) {
-    	final List<ItemStack> notAddedItems = new ArrayList<>();
-        final Set<Integer> occupiedSlots = itemMap.keySet();
+    public void addItem(@NotNull final ItemStack... items) {
+    	final List<ItemStack> notAddedItems = new ArrayList<>(items.length);
 
         int slot = 0;
     	for (final ItemStack guiItem : items) {
-            slot = getSlot(occupiedSlots, slot);
-            if (isInvalidSlot(notAddedItems, slot, guiItem)) continue; // incase.
+            if (slot >= size) {
+                if (rows == 6) break; // save some performance
+                notAddedItems.add(guiItem);
+                continue;
+            }
 
-            itemMap.put(slot, MenuItem.of(guiItem));
+            slot = getSlot(itemMap, slot);
+
+            this.itemMap[slot] = MenuItem.of(guiItem);
             slot++;
         }
         
-        if (dynamicSizing && !notAddedItems.isEmpty() && this.rows < 6 && this.type == MenuType.CHEST) {
-            recreateInventory();
-            update();
-        	return this.addItem(notAddedItems.toArray(new ItemStack[0]));
+        if (this.dynamicSizing && !notAddedItems.isEmpty() && this.rows < 6 && this.type == MenuType.CHEST) {
+            this.updating = true;
+            this.recreateInventory();
+            this.update();
+            this.updating = true;
+        	this.addItem(notAddedItems.toArray(new ItemStack[0]));
         }
-        return (M) this;
 	}
 
-    public M addItem(@NotNull final MenuItem... items) {
-        final List<MenuItem> notAddedItems = new ArrayList<>(54);
-        final Set<Integer> occupiedSlots = itemMap.keySet();
+    public void addItem(@NotNull final MenuItem... items) {
+        final List<MenuItem> notAddedItems = new ArrayList<>(items.length);
 
         int slot = 0;
         for (final MenuItem guiItem : items) {
-            slot = getSlot(occupiedSlots, slot);
-            if (isInvalidSlot(notAddedItems, slot, guiItem)) continue; // incase.
+            if (slot >= size && rows == 6) break; // save some performance
 
-            itemMap.put(slot, guiItem);
+            if (slot >= size) {
+                notAddedItems.add(guiItem);
+                continue;
+            }
+
+            slot = getSlot(itemMap, slot);
+
+            this.itemMap[slot] = guiItem;
             slot++;
         }
 
-        if (dynamicSizing && !notAddedItems.isEmpty() && (this.rows < 6 && this.type == MenuType.CHEST)) {
-            recreateInventory();
-            update();
-            return this.addItem(notAddedItems.toArray(new MenuItem[0]));
+        if (this.dynamicSizing && !notAddedItems.isEmpty() && (this.rows < 6 && this.type == MenuType.CHEST)) {
+            this.updating = true;
+            this.recreateInventory();
+            this.update();
+            this.updating = true;
+            this.addItem(notAddedItems.toArray(new MenuItem[0]));
         }
-        return (M) this;
     }
 
-    private boolean isInvalidSlot(List<MenuItem> notAddedItems, int slot, MenuItem guiItem) {
-        if (slot >= size) {
-            notAddedItems.add(guiItem);
-            return true;
-        }
-        return false;
+
+    private static boolean isInvalidSlot(Collection<ItemStack> notAddedItems, int slot, int size, ItemStack guiItem) {
+        if (slot < size) return false;
+        notAddedItems.add(guiItem);
+        return true;
     }
 
-    private boolean isInvalidSlot(List<ItemStack> notAddedItems, int slot, ItemStack guiItem) {
-        if (slot >= size) {
-            notAddedItems.add(guiItem);
-            return true;
-        }
-        return false;
-    }
-
-    private static int getSlot(Set<Integer> occupiedSlots, int slot) {
-        while (true) {
-            boolean contains = occupiedSlots.contains(slot);
-            if (!contains) break;
+    private static int getSlot(MenuItem[] occupiedSlots, int slot) {
+        while (occupiedSlots[slot] != null) {
             slot++;
         }
 
         return slot;
     }
 
-    public M setItem(@NotNull Slot slot, ItemStack item) {
-        if (!slot.isSlot()) return (M) this;
-        itemMap.put(slot.slot, MenuItem.of(item));
-        return (M) this;
+    public void setItem(@NotNull Slot slot, ItemStack item) {
+        if (!slot.isSlot()) return;
+        this.itemMap[slot.slot] = MenuItem.of(item);
     }
 
-    public M setItem(@NotNull Slot slot, MenuItem item) {
-        if (!slot.isSlot()) return (M) this;
-        itemMap.put(slot.slot, item);
-        return (M) this;
+    public void setItem(@NotNull Slot slot, MenuItem item) {
+        if (!slot.isSlot()) return;
+        this.itemMap[slot.slot] = item;
     }
 
-    public M setItem(int slot, ItemStack item) {
-        itemMap.put(slot, MenuItem.of(item));
-        return (M) this;
+    public void setItem(int slot, ItemStack item) {
+        this.itemMap[slot] = MenuItem.of(item);
     }
 
-    public M setItem(int slot, MenuItem item) {
-        itemMap.put(slot, item);
-        return (M) this;
+    public void setItem(int slot, MenuItem item) {
+        this.itemMap[slot] = item;
     }
 
     public @Nullable MenuItem getItem(int i) {
-        return itemMap.get(i);
+        return this.itemMap[i];
     }
 
     public Optional<MenuItem> get(int i) {
-        return Optional.ofNullable(itemMap.get(i));
+        return Optional.ofNullable(this.itemMap[i]);
     }
 
     public @Nullable MenuItem getItem(@NotNull Slot slot) {
         if (!slot.isSlot()) return null;
-        return itemMap.get(slot.slot);
+        return this.itemMap[slot.slot];
     }
 
     public Optional<MenuItem> get(@NotNull Slot slot) {
         if (!slot.isSlot()) return Optional.empty();
-        return Optional.ofNullable(itemMap.get(slot.slot));
+        return Optional.ofNullable(this.itemMap[slot.slot]);
     }
 
     public boolean hasItem(@NotNull Slot slot) {
         if (!slot.isSlot()) return false;
-        return itemMap.get(slot.slot) != null;
+        return this.itemMap[slot.slot] != null;
     }
 
     public boolean hasItem(int slot) {
-        return itemMap.get(slot) != null;
+        return this.itemMap[slot] != null;
     }
 
     public boolean hasItem(ItemStack item) {
-        return getItem(itemOne -> itemOne.getItemStack().equals(item)) != null;
+        return this.getItem(itemOne -> itemOne.getItemStack().equals(item)) != null;
     }
 
     public boolean hasItem(MenuItem item) {
-        return getItem(itemOne -> itemOne.equals(item)) != null;
+        return this.getItem(itemOne -> itemOne.equals(item)) != null;
     }
 
     public Optional<MenuItem> get(Predicate<MenuItem> itemDescription) {
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            val value = itemMap.get(i);
+        for (MenuItem value : this.itemMap) {
             if (value == null || !itemDescription.test(value)) continue;
             return Optional.of(value);
         }
@@ -277,126 +318,129 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
 
 
     public @Nullable MenuItem getItem(Predicate<MenuItem> itemDescription) {
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            val value = itemMap.get(i);
+        for (MenuItem value : this.itemMap) {
             if (value == null || !itemDescription.test(value)) continue;
             return value;
         }
         return null;
     }
 
-    public M removeItem(@NotNull final ItemStack... itemStacks) {
-        return removeItemStacks(Arrays.asList(itemStacks));
+    public void removeItem(@NotNull final ItemStack... itemStacks) {
+        removeItemStacks(Arrays.asList(itemStacks));
     }
 
-    public M removeItemStacks(@NotNull final List<ItemStack> itemStacks) {
+    public void removeItemStacks(@NotNull final List<ItemStack> itemStacks) {
         Set<ItemStack> set = ImmutableSet.copyOf(itemStacks);
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            val item = itemMap.get(i);
-            if (item == null) continue;
 
-            val itemStack = item.getItemStack();
-            if (set.contains(itemStack)) {
-                itemMap.remove(i);
-                inventory.remove(itemStack);
+        int length = itemMap.length;
+        for (int i = 0; i < length; i++) {
+            MenuItem item = this.itemMap[i];
+            if (item != null && set.contains(item.getItemStack())) {
+                this.remove(i);
             }
         }
-        return (M) this;
     }
 
-    public M removeItem(@NotNull final MenuItem... items) {
+    public void removeItem(@NotNull final MenuItem... items) {
         Set<MenuItem> slots = ImmutableSet.copyOf(items);
 
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
+        int length = itemMap.length;
+        for (int i = 0; i < length; i++) {
+            MenuItem item = this.itemMap[i];
             if (item != null && slots.contains(item)) {
-                itemMap.remove(i);
-                inventory.remove(item.getItemStack());
+                this.remove(i);
             }
         }
-        return (M) this;
     }
 
     @Override
-    public M removeItem(@NotNull final List<MenuItem> itemStacks) {
+    public void removeItem(@NotNull final List<MenuItem> itemStacks) {
         Set<MenuItem> set = ImmutableSet.copyOf(itemStacks);
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
-            if (set.contains(item)) {
-                itemMap.remove(i);
-                inventory.remove(item.getItemStack());
+        int length = itemMap.length;
+        for (int i = 0; i < length; i++) {
+            MenuItem item = this.itemMap[i];
+            if (item != null && set.contains(item)) {
+                this.remove(i);
             }
         }
-        return (M) this;
     }
 
-    M update(Inventory inventory) {
+    void update(Inventory inventory) {
         this.updating = true;
         recreateItems(inventory);
-        List<HumanEntity> entities = new ArrayList<>(inventory.getViewers());
+        List<HumanEntity> entities = ImmutableList.copyOf(inventory.getViewers());
         entities.forEach(e -> ((Player) e).updateInventory());
         this.updating = false;
-        return (M) this;
     }
 
     @Override
-    public M update() {
-        return this.update(this.inventory);
+    public void update() {
+        this.update(this.inventory);
     }
 
     public void updatePer(long repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), () -> update(), 0, repeatTime);
+        sch.runTaskTimer(plugin, () -> {
+            this.updating = true;
+            this.update();
+            this.updating = true;
+        }, 0, repeatTime);
     }
 
     public void updatePer(@NotNull Duration repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), () -> update(), 0, repeatTime.toMillis() / 50);
+        sch.runTaskTimer(plugin, () -> {
+            this.updating = true;
+            this.update();
+            this.updating = true;
+        }, 0, repeatTime.toMillis() / 50);
     }
 
     public void updatePer(long delay, long repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), () -> update(), delay, repeatTime);
+        sch.runTaskTimer(plugin, () -> {
+            this.updating = true;
+            this.update();
+            this.updating = true;
+        }, delay, repeatTime);
     }
 
     public void updatePer(@NotNull Duration delay, @NotNull Duration repeatTime) {
-        sch.runTaskTimer(Menus.plugin(), () -> update(), delay.toMillis() / 50, repeatTime.toMillis() / 50);
+        sch.runTaskTimer(plugin, () -> {
+            this.updating = true;
+            this.update();
+            this.updating = true;
+        }, delay.toMillis() / 50, repeatTime.toMillis() / 50);
     }
 
-    public M updateTitle(String title) {
+    public void updateTitle(String title) {
         Inventory oldInventory = this.inventory;
         String colorizedTitle = translateAlternateColorCodes('&', title);
+        Inventory updatedInventory = this.type == MenuType.CHEST
+                ? Bukkit.createInventory(this, this.size, colorizedTitle)
+                : Bukkit.createInventory(this, this.type.getType(), colorizedTitle);
         this.updating = true;
-        Inventory updatedInventory = type == MenuType.CHEST
-                ? Bukkit.createInventory(this, size, colorizedTitle)
-                : Bukkit.createInventory(this, type.getType(), colorizedTitle);
         this.title = colorizedTitle;
         this.inventory = updatedInventory;
 
         List<HumanEntity> entities = ImmutableList.copyOf(oldInventory.getViewers());
         entities.forEach(e -> e.openInventory(updatedInventory));
         this.updating = false;
-        return (M) this;
     }
 
     protected void recreateItems(Inventory inventory) {
-        int size = itemMap.size();
+        int size = this.itemMap.length;
         for (int i = 0; i < size; i++) {
-            MenuItem menuItem = itemMap.get(i);
+            MenuItem menuItem = this.itemMap[i];
             inventory.setItem(i, menuItem == null ? null : menuItem.getItemStack());
         }
     }
 
-    public M open(@NotNull HumanEntity entity) {
-        if (entity.isSleeping()) return (M) this;
+    public void open(@NotNull HumanEntity entity) {
+        if (entity.isSleeping()) return;
 
         this.updating = true;
-        update();
+        this.update();
         this.updating = false;
 
         entity.openInventory(inventory);
-        return (M) this;
     }
 
     public boolean addModifier(Modifier modifier) {
@@ -432,53 +476,90 @@ public abstract class BaseMenu<M extends BaseMenu<M>> implements IMenu<M> {
     }
 
     public void updateItem(final int slot, @NotNull final ItemStack itemStack) {
-        final MenuItem guiItem = itemMap.get(slot);
+        final MenuItem guiItem = this.itemMap[slot];
 
         if (guiItem == null) {
-            itemMap.put(slot, MenuItem.of(itemStack));
+            itemMap[slot] = MenuItem.of(itemStack);
             return;
         }
 
         guiItem.setItemStack(itemStack);
-        itemMap.put(slot, guiItem);
+        itemMap[slot] = guiItem;
     }
 
-    public void updateItem(@NotNull Slot slot, @NotNull final ItemStack itemStack) {
-        if (!slot.isSlot()) return;
-        final int slotNum = slot.slot;
-
-        final MenuItem guiItem = itemMap.get(slotNum);
+    public void updateItem(@NotNull Slot pos, @NotNull final ItemStack itemStack) {
+        if (!pos.isSlot()) return;
+        final int slot = pos.slot;
+        final MenuItem guiItem = this.itemMap[slot];
 
         if (guiItem == null) {
-            itemMap.put(slotNum, MenuItem.of(itemStack));
+            itemMap[slot] = MenuItem.of(itemStack);
             return;
         }
 
         guiItem.setItemStack(itemStack);
-        itemMap.put(slotNum, guiItem);
+        itemMap[slot] = guiItem;
     }
 
-    public void updateItem(@NotNull Slot slot, @NotNull final MenuItem itemStack) {
-        if (!slot.isSlot()) return;
-        final int slotNum = slot.slot;
+    public void setContents(MenuItem... items) {
+        this.itemMap = items;
 
-        final MenuItem guiItem = itemMap.get(slotNum);
+        this.updating = true;
+        this.update();
+        this.updating = false;
+    }
 
-        if (guiItem == null) {
-            itemMap.put(slotNum, itemStack);
-            return;
-        }
+    @NotNull
+    public MenuItem[] getItems() {
+        return Arrays.copyOf(this.itemMap, this.itemMap.length);
+    }
 
-        guiItem.setItemStack(itemStack.getItemStack());
-        itemMap.put(slotNum, guiItem);
+    @NotNull
+    public @Unmodifiable List<MenuItem> getItemList() {
+        return ImmutableList.copyOf(itemMap);
     }
 
     @NotNull
     public @Unmodifiable Map<Integer, MenuItem> getItemMap() {
-        return Collections.unmodifiableMap(itemMap);
+        Map<Integer, MenuItem> items = new HashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            items.put(i, itemMap[i]);
+        }
+        return Collections.unmodifiableMap(items);
+    }
+
+    @NotNull
+    public @Unmodifiable Map<Integer, MenuItem> getLinkedItemMap() {
+        Map<Integer, MenuItem> items = new LinkedHashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            items.put(i, itemMap[i]);
+        }
+        return Collections.unmodifiableMap(items);
+    }
+
+    @NotNull
+    public @Unmodifiable Map<Integer, MenuItem> getConcurrentItemMap() {
+        Map<Integer, MenuItem> items = new ConcurrentHashMap<>(size);
+        for (int i = 0; i < size; i++) {
+            items.put(i, itemMap[i]);
+        }
+        return Collections.unmodifiableMap(items);
     }
 
     public void clear() {
-        itemMap.clear();
+        Arrays.fill(itemMap, null);
+    }
+
+    public MenuData getMenuData() {
+        return type == MenuType.CHEST
+                ? new MenuData(title, rows, modifiers, Arrays.asList(itemMap))
+                : new MenuData(title, type, modifiers, Arrays.asList(itemMap));
+    }
+
+    public enum Click {
+        OUTSIDE,
+        BOTTOM,
+        TOP,
+        DEFAULT
     }
 }
