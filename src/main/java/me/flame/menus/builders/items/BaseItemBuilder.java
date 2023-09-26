@@ -1,12 +1,12 @@
 package me.flame.menus.builders.items;
 
 import me.flame.menus.items.MenuItem;
+import me.flame.menus.util.ItemResponse;
 import me.flame.menus.util.VersionHelper;
 
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Damageable;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -15,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
 
@@ -233,7 +232,7 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
      * @param event the event
      * @return the new MenuItem
      */
-    public MenuItem buildItem(Consumer<InventoryClickEvent> event) {
+    public MenuItem buildItem(ItemResponse event) {
         this.item.setItemMeta(meta);
         return MenuItem.of(item, event);
     }
