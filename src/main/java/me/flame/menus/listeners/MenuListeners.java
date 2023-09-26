@@ -204,7 +204,7 @@ public final class MenuListeners implements Listener {
             		? menuItem.click(num, actionEvent)
                     		  .thenComposeAsync(e -> handleRetry(num, menuItem, actionEvent, response))
                     : menuItem.click(num, actionEvent)
-                    		  .thenCompose(e -> handleRetry(num, menuItem, actionEvent, response))
+                    		  .thenCompose(e -> handleRetry(num, menuItem, actionEvent, response));
         }
         return CompletableFuture.completedFuture(response);
     }
