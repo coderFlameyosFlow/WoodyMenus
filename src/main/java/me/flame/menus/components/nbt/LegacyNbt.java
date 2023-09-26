@@ -76,7 +76,7 @@ public final class LegacyNbt implements NbtWrapper {
             asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
             asBukkitCopyMethod = craftItemStackClass.getMethod("asBukkitCopy", craftItemStack);
         } catch (NoSuchMethodException e) {
-            Bukkit.getLogger().log(Level.SEVERE, e.getMessage(), e);
+            throw new RuntimeException(e.getMessage());
         }
     }
 
