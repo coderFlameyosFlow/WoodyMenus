@@ -50,7 +50,7 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
     CompletableFuture<ItemResponse> clickAction;
 
     @Getter @Setter
-    boolean async;
+    boolean async = false;
 
     @NotNull
     ItemStack itemStack;
@@ -94,28 +94,7 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
         return clickAction.getNow(ifAbsent);
     }
 
-    /**
-     * Set the click action but always guaranteed to run asynchronously
-     * @apiNote for anyone who is new to asynchronous programming, it does not make your code faster, but prevents blocking the main thread and thus prevent slowing down the thread that runs your server.
-     * @param clickAction the clickAction
-     */
-    public void setClickActionAsync(@NotNull CompletableFuture<ItemResponse> clickAction) {
-        this.async = true;
-        this.clickAction = clickAction;
-    }
-
-    /**
-     * Set the click action but always guaranteed to run asynchronously
-     * @apiNote for anyone who is new to asynchronous programming, it does not make your code faster, but prevents blocking the main thread and thus prevent slowing down the thread that runs your server.
-     * @param clickAction the clickAction
-     */
-    public void setClickActionAsync(@NotNull ItemResponse clickAction) {
-        this.async = true;
-        this.clickAction = CompletableFuture.completedFuture(clickAction);
-    }
-
     public void setClickAction(@NotNull ItemResponse clickAction) {
-        this.async = false;
         this.clickAction = CompletableFuture.completedFuture(clickAction);
     }
 
