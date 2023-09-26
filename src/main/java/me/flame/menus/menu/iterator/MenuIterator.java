@@ -29,7 +29,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
 
     @NotNull
-    private final BaseMenu<?> menu;
+    private final BaseMenu menu;
 
     private Slot next;
 
@@ -38,23 +38,23 @@ public final class MenuIterator implements Iterator<MenuItem> {
     private final int rows;
 
     private static final String NOTHING_MORE_NEXT =
-            "Used PageIterator#next() but nothing more" +
+            "Used MenuIterator#next() but nothing more" +
             "\nFix: Use hasNext() beforehand to avoid this error.";
 
     private static final String NOTHING_MORE_NEXT_OPTIONAL =
-            "Used PageIterator#nextOptional() but nothing more" +
+            "Used MenuIterator#nextOptional() but nothing more" +
             "\nFix: Use hasNext() beforehand to avoid this error.";
 
     private static final String NOTHING_MORE_NEXT_NOT_NULL =
-            "Used PageIterator#nextNotNull() but nothing more";
+            "Used MenuIterator#nextNotNull() but nothing more";
 
     private static final String GREATER_THAN_ONE_ONLY =
-            "Starting row and column must be 1 or greater, col 9 and under or rows 6 and under only." +
+            "Starting row and column must be 1 or greater only." +
             "\nFix: If you're using an algorithm for rows/cols, you might wanna check it";
 
     public MenuIterator(int startingRow, int startingCol,
                         @NotNull IterationDirection direction,
-                        @NotNull BaseMenu<?> menu) {
+                        @NotNull BaseMenu menu) {
         Slot prepos = new Slot(startingRow, startingCol);
         if (!prepos.isSlot()) throw new IllegalArgumentException(GREATER_THAN_ONE_ONLY);
         this.menu = menu;
@@ -63,8 +63,8 @@ public final class MenuIterator implements Iterator<MenuItem> {
 
         this.rows = menu.getRows();
     }
-    public MenuIterator(@NotNull IterationDirection direction,
-                        @NotNull BaseMenu<?> menu) {
+
+    public MenuIterator(@NotNull IterationDirection direction, @NotNull BaseMenu menu) {
         this.menu = menu;
         this.position = Slot.FIRST.copy();
         this.direction = direction;
@@ -78,7 +78,7 @@ public final class MenuIterator implements Iterator<MenuItem> {
      * @param emptyOnly  a boolean indicating whether to retrieve only empty slots
      * @return           the next empty slot in the menu, or null if no empty slot is found
      */
-    public Slot nextSlot(boolean emptyOnly) {
+    public @Nullable Slot nextSlot(boolean emptyOnly) {
         if (!emptyOnly) return nextSlot();
 
         while (true) {
