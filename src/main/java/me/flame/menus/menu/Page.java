@@ -1,7 +1,10 @@
 package me.flame.menus.menu;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+
 import lombok.Setter;
+
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.iterator.PageIterator;
 
@@ -21,20 +24,20 @@ public final class Page implements Iterable<MenuItem> {
     private final PaginatedMenu holder;
 
     @NotNull
-    private final Map<Integer, MenuItem> itemMap;
-
-    @NotNull
     private final PageIterator iterator = new PageIterator(IterationDirection.HORIZONTAL, this);
-    
-    private final int size, rows;
 
-    private @Setter boolean dynamicSizing;
+    @Setter
+    private boolean dynamicSizing;
+
+    int size, rows;
+
+    MenuItem[] itemMap;
 
     private Page(final @NotNull PaginatedMenu holder) {
         this.holder = holder;
         this.size = holder.size;
         this.rows = holder.rows;
-        this.itemMap = new HashMap<>(size);
+        this.itemMap = new MenuItem[size];
         this.dynamicSizing = holder.isDynamicSizing();
     }
 
@@ -51,26 +54,29 @@ public final class Page implements Iterable<MenuItem> {
      */
     public boolean addItem(@NotNull final ItemStack... items) {
         final List<ItemStack> notAddedItems = new ArrayList<>();
-        final Set<Integer> occupiedSlots = itemMap.keySet();
+
 
         int slot = 0;
         for (final ItemStack guiItem : items) {
             if (slot >= size) {
+                if (rows == 6) break; // save some performance
                 notAddedItems.add(guiItem);
                 continue;
             }
 
-            while (occupiedSlots.contains(slot)) {
-                slot++;
-            }
+            slot = getSlot(itemMap, slot);
 
-            itemMap.put(slot, MenuItem.of(guiItem));
+            try {
+                itemMap[slot] = MenuItem.of(guiItem);
+            } catch (IndexOutOfBoundsException e) { // slot will only get bigger when too high so exit
+                break;
+            }
             slot++;
         }
 
-        if (dynamicSizing && !notAddedItems.isEmpty() && (this.rows < 6 && holder.getType() == MenuType.CHEST)) {
-            holder.recreateInventory();
-            holder.update();
+        if (this.dynamicSizing && !notAddedItems.isEmpty() && (this.rows < 6 && this.holder.getType() == MenuType.CHEST)) {
+            this.holder.recreateInventory();
+            this.holder.update();
             return this.addItem(notAddedItems.toArray(new ItemStack[0]));
         }
         return true;
@@ -83,20 +89,22 @@ public final class Page implements Iterable<MenuItem> {
      */
     public boolean addItem(@NotNull final MenuItem... items) {
         final List<MenuItem> notAddedItems = new ArrayList<>();
-        final Set<Integer> occupiedSlots = itemMap.keySet();
 
         int slot = 0;
         for (final MenuItem guiItem : items) {
             if (slot >= size) {
+                if (rows == 6) break; // save some performance
                 notAddedItems.add(guiItem);
                 continue;
             }
 
-            while (occupiedSlots.contains(slot)) {
-                slot++;
-            }
+            slot = getSlot(itemMap, slot);
 
-            itemMap.put(slot, guiItem);
+            try {
+                itemMap[slot] = guiItem;
+            } catch (IndexOutOfBoundsException e) { // slot will only get bigger when too high so exit
+                break;
+            }
             slot++;
         }
 
@@ -108,13 +116,33 @@ public final class Page implements Iterable<MenuItem> {
         return true;
     }
 
+    private static boolean isSlotGreater(Collection<MenuItem> notAddedItems, int slot, int size, MenuItem guiItem) {
+        if (slot < size) return false;
+        notAddedItems.add(guiItem);
+        return true;
+    }
+
+
+    private static boolean isSlotGreater(Collection<ItemStack> notAddedItems, int slot, int size, ItemStack guiItem) {
+        if (slot < size) return false;
+        notAddedItems.add(guiItem);
+        return true;
+    }
+
+    private static int getSlot(MenuItem[] occupiedSlots, int slot) {
+        while (occupiedSlots[slot] != null) {
+            slot++;
+        }
+        return slot;
+    }
+
     /**
      * Set the item at the specified slot in the page.
      * @param slot the slot to set
      * @param item the item to set
      */
     public void setItem(int slot, MenuItem item) {
-        itemMap.put(slot, item);
+        this.itemMap[slot] = item;
     }
 
     /**
@@ -123,7 +151,7 @@ public final class Page implements Iterable<MenuItem> {
      * @param item the item to set
      */
     public void setItem(int slot, ItemStack item) {
-        itemMap.put(slot, MenuItem.of(item));
+        this.itemMap[slot] = MenuItem.of(item);
     }
 
     /**
@@ -133,7 +161,7 @@ public final class Page implements Iterable<MenuItem> {
      */
     public void setItem(Slot slot, MenuItem item) {
         if (!slot.isSlot()) return;
-        itemMap.put(slot.slot, item);
+        this.itemMap[slot.slot] = item;
     }
 
     /**
@@ -143,7 +171,7 @@ public final class Page implements Iterable<MenuItem> {
      */
     public void setItem(Slot slot, ItemStack item) {
         if (!slot.isSlot()) return;
-        itemMap.put(slot.slot, MenuItem.of(item));
+        this.itemMap[slot.slot] = MenuItem.of(item);
     }
 
     /**
@@ -153,15 +181,15 @@ public final class Page implements Iterable<MenuItem> {
     public void removeItem(MenuItem... items) {
         Set<MenuItem> slots = ImmutableSet.copyOf(items);
 
-        int size = itemMap.size();
+        int size = itemMap.length;
         Inventory inventory = holder.getInventory();
         for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
+            MenuItem item = itemMap[i];
             if (item == null) continue;
 
             ItemStack itemStack = item.getItemStack();
             if (slots.contains(item)) {
-                itemMap.remove(i);
+                remove(i);
                 inventory.remove(itemStack);
             }
         }
@@ -174,15 +202,15 @@ public final class Page implements Iterable<MenuItem> {
     public void removeItem(ItemStack... items) {
         Set<ItemStack> slots = ImmutableSet.copyOf(items);
 
-        int size = itemMap.size();
+        int size = itemMap.length;
         Inventory inventory = holder.getInventory();
         for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
+            MenuItem item = itemMap[i];
             if (item == null) continue;
 
             ItemStack itemStack = item.getItemStack();
             if (slots.contains(itemStack)) {
-                itemMap.remove(i);
+                remove(i);
                 inventory.remove(itemStack);
             }
         }
@@ -193,10 +221,10 @@ public final class Page implements Iterable<MenuItem> {
      * @param itemDescription the predicate to check
      */
     public void removeItem(Predicate<MenuItem> itemDescription) {
-        int size = itemMap.size();
+        int size = itemMap.length;
         for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
-            if (item != null && itemDescription.test(item)) itemMap.remove(i);
+            MenuItem item = itemMap[i];
+            if (item != null && itemDescription.test(item)) remove(i);
         }
     }
 
@@ -207,7 +235,7 @@ public final class Page implements Iterable<MenuItem> {
      * @return the removed item
      */
     public MenuItem removeItem(Slot slot) {
-        return itemMap.remove(slot.slot);
+        return remove(slot.slot);
     }
 
     /**
@@ -217,7 +245,7 @@ public final class Page implements Iterable<MenuItem> {
      * @return the removed item
      */
     public MenuItem removeItem(int slot) {
-        return itemMap.remove(slot);
+        return remove(slot);
     }
 
     /**
@@ -226,8 +254,13 @@ public final class Page implements Iterable<MenuItem> {
      * @param slot the slot to check
      * @return the item or null
      */
-    public MenuItem getItem(Slot slot) {
-        return itemMap.get(slot.slot);
+    public @Nullable MenuItem getItem(Slot slot) {
+        if (!slot.isSlot()) return null;
+        try {
+            return itemMap[slot.slot];
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
     }
 
     /**
@@ -236,8 +269,12 @@ public final class Page implements Iterable<MenuItem> {
      * @param slot the slot to check
      * @return the item or null
      */
-    public MenuItem getItem(int slot) {
-        return itemMap.get(slot);
+    public @Nullable MenuItem getItem(int slot) {
+        try {
+            return itemMap[slot];
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
     }
 
     /**
@@ -246,10 +283,10 @@ public final class Page implements Iterable<MenuItem> {
      * @return the item or null
      */
     public @Nullable MenuItem getItem(Predicate<MenuItem> itemDescription) {
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
-            if (item != null && itemDescription.test(item)) return item;
+        for (MenuItem item : itemMap) {
+            if (item != null && itemDescription.test(item)) {
+                return item;
+            }
         }
         return null;
     }
@@ -261,7 +298,12 @@ public final class Page implements Iterable<MenuItem> {
      * @return the item
      */
     public Optional<MenuItem> get(Slot slot) {
-        return Optional.ofNullable(itemMap.get(slot.slot));
+        if (!slot.isSlot()) return Optional.empty();
+        try {
+            return Optional.ofNullable(itemMap[slot.slot]);
+        } catch (IndexOutOfBoundsException e) {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -271,7 +313,11 @@ public final class Page implements Iterable<MenuItem> {
      * @return the item
      */
     public Optional<MenuItem> get(int slot) {
-        return Optional.ofNullable(itemMap.get(slot));
+        try {
+            return Optional.ofNullable(itemMap[slot]);
+        } catch (IndexOutOfBoundsException e) {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -280,9 +326,8 @@ public final class Page implements Iterable<MenuItem> {
      * @return the item
      */
     public Optional<MenuItem> get(Predicate<MenuItem> itemDescription) {
-        int size = itemMap.size();
-        for (int i = 0; i < size; i++) {
-            MenuItem item = itemMap.get(i);
+        int size = itemMap.length;
+        for (MenuItem item : itemMap) {
             if (item != null && itemDescription.test(item)) return Optional.of(item);
         }
         return Optional.empty();
@@ -320,7 +365,7 @@ public final class Page implements Iterable<MenuItem> {
      * Clear the entire page.
      */
     public void clear() {
-        itemMap.clear();
+        Arrays.fill(itemMap, null);
     }
 
     /**
@@ -328,7 +373,7 @@ public final class Page implements Iterable<MenuItem> {
      * @return the stream
      */
     public Stream<MenuItem> stream() {
-        return itemMap.values().stream();
+        return Arrays.stream(itemMap).parallel();
     }
 
     /**
@@ -336,7 +381,7 @@ public final class Page implements Iterable<MenuItem> {
      * @return the parallel stream
      */
     public Stream<MenuItem> parallelStream() {
-        return itemMap.values().parallelStream();
+        return Arrays.stream(itemMap).parallel();
     }
 
     /**
@@ -369,7 +414,7 @@ public final class Page implements Iterable<MenuItem> {
      * @return true if there is an item
      */
     public boolean hasItem(int slot) {
-        return itemMap.get(slot) != null;
+        return itemMap[slot] != null;
     }
 
     /**
@@ -377,8 +422,26 @@ public final class Page implements Iterable<MenuItem> {
      * @param slot the slot
      * @return true if there is an item
      */
-    public boolean hasItem(Slot slot) {
+    public boolean hasItem(@NotNull Slot slot) {
         if (!slot.isSlot()) return false;
-        return itemMap.get(slot.slot) != null;
+        return itemMap[slot.slot] != null;
+    }
+
+    private MenuItem remove(int index) {
+        int length = this.itemMap.length;
+        Preconditions.checkElementIndex(index, length);
+
+        MenuItem item = this.itemMap[index];
+        this.itemMap[index] = null;
+        return item;
+    }
+
+    public void setContents(MenuItem... items) {
+        this.itemMap = items;
+        this.holder.update();
+    }
+
+    public List<MenuItem> getItems() {
+        return Arrays.asList(itemMap);
     }
 }
