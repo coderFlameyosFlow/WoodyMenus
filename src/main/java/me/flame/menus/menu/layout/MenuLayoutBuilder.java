@@ -3,27 +3,58 @@ package me.flame.menus.menu.layout;
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.Menu;
 import me.flame.menus.menu.PaginatedMenu;
+
 import me.flame.menus.modifiers.Modifier;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.EnumSet;
+import java.util.Map;
 
-@ApiStatus.Experimental
+/**
+ * Complex and Fast builder to build (paginated) menus from a list of strings or a so-called pattern.
+ * <p>
+ * Example usage:
+ * <pre>{@code
+ *     Map<Character, MenuItem> menuItems = ImmutableMap.of(
+ *          'X', ItemBuilder.of(Material.STONE).buildItem();
+ *          'K', ItemBuilder.of(Material.WHITE_STAINED_GLASS_PANE).buildItem();
+ *     );
+ *     Menu menu = MenuLayoutBuilder.bind(menuItems)
+ *                  .pattern(
+ *                      "KKKKKKKKK"
+ *                      "KXX   XXK"
+ *                      "KX     XK"
+ *                      "KX     XK"
+ *                      "KXX   XXK"
+ *                      "KKKKKKKKK"
+ *                  )
+ *                  .createMenu("Awesome");
+ * }</pre>
+ * @author FlameyosFlow
+ * @since 1.2.0. Stabilized at 1.5.0
+ */
 @SuppressWarnings("unused")
-public class MenuLayoutBuilder {
+public final class MenuLayoutBuilder {
     @NotNull
-    public final Map<Character, MenuItem> itemMap;
+    private final Map<Character, MenuItem> itemMap;
 
-    private final MenuItem[] items = new MenuItem[54];
+    @NotNull
+    private String[] patterns;
 
-    private int size;
-
-    private static final int MAX_ROW_SIZE = 9;
+    private int rows;
 
     MenuLayoutBuilder(@NotNull Map<Character, MenuItem> itemMap) {
         this.itemMap = itemMap;
+        this.patterns = null;
+        this.rows = 0;
+    }
+
+
+    public MenuLayoutBuilder pattern(String @NotNull ... patterns) {
+        this.patterns = patterns;
+        this.rows = patterns.length;
+        return this;
     }
 
     @NotNull
@@ -33,68 +64,51 @@ public class MenuLayoutBuilder {
     }
 
     /**
-     * Add a new row to the menu.
-     * @param string the string to add (can be partially empty)
-     * @return the object for chaining
-     */
-    public MenuLayoutBuilder row(@NotNull String string) {
-        int stringLength = size + string.length();
-        if (stringLength > 9) {
-            throw new IllegalArgumentException(
-                "Too many strings (Temporary.. maybe?), length = "
-                + stringLength + "\n String = " + string +
-                "\nFix: Reduce the amount of letters to 9 letters in total."
-            );
-        }
-
-        for (int i = size; i < stringLength; i++) {
-            addItem(i, size >= 54 ? ' ' : string.charAt(i));
-        }
-
-        if (stringLength < 9) {
-            Arrays.fill(items, stringLength, stringLength + 9, null);
-        }
-        return this;
-    }
-
-    public MenuLayoutBuilder pattern(@NotNull String... string) {
-        for (String s : string) row(s);
-        return this;
-    }
-
-    private void addItem(int i, char character) {
-        size++;
-
-        if (character == ' ') return; // null by default
-        MenuItem item = itemMap.get(character);
-        if (item == null) {
-            items[i] = null;
-            throw new IllegalArgumentException(
-                "Unknown item: " + character +
-                "\nLikely a letter not in the bound map." +
-                "\nMap: " + itemMap + "\nFix: Add or Change the letter."
-            );
-        }
-        items[i] = item;
-    }
-
-    /**
      * Creates a menu with the given title and populates it with items.
      *
      * @param  title  the title of the menu
      * @return        the created menu
      */
     public Menu createMenu(String title) {
-        if (size >= 54) {
-            throw new IllegalArgumentException(
-                "Too many rows. \nAmount of rows:" + size / 9 +
-                "\nFix: Reduce the amount of letters to 9 letters in total."
-            );
-        }
-        Menu menu = new Menu(Math.min(size / 9, 6), title, EnumSet.noneOf(Modifier.class));
+        if (patterns == null)
+            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+        Menu menu = Menu.create(title, rows);
+
+        int size = ((rows * 9) + 9) - 10;
         for (int i = 0; i < size; i++) {
-            menu.setItem(i, items[i]);
+            int row = i / 9;
+            int col = i % 9;
+
+            char item = patterns[row].charAt(col);
+            MenuItem menuItem = itemMap.get(item);
+
+            if (menuItem != null) menu.setItem(i, menuItem);
         }
+
+        return menu;
+    }
+    /**
+     * Creates a menu with the given title and populates it with items.
+     *
+     * @param  title  the title of the menu
+     * @return        the created menu
+     */
+    public Menu createMenu(String title, EnumSet<Modifier> modifiers) {
+        if (patterns == null)
+            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+        Menu menu = Menu.create(title, rows, modifiers);
+
+        int size = ((rows * 9) + 9) - 10;
+        for (int i = 0; i < size; i++) {
+            int row = i / 9;
+            int col = i % 9;
+
+            char item = patterns[row].charAt(col);
+            MenuItem menuItem = itemMap.get(item);
+
+            if (menuItem != null) menu.setItem(i, menuItem);
+        }
+
         return menu;
     }
 
@@ -106,11 +120,47 @@ public class MenuLayoutBuilder {
      * @return        the created paginated menu
      */
     public PaginatedMenu createPaginated(String title, int pages) {
-        PaginatedMenu menu = PaginatedMenu.create(title, Math.min(size / 9, 6), pages);
+        if (patterns == null)
+            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+        PaginatedMenu menu = PaginatedMenu.create(title, rows, pages);
 
+        int size = ((rows * 9) + 9) - 10;
         for (int i = 0; i < size; i++) {
-            menu.setItem(i, items[i]);
+            int row = i / 9;
+            int col = i % 9;
+
+            char item = patterns[row].charAt(col);
+            MenuItem menuItem = itemMap.get(item);
+
+            if (menuItem != null) menu.setItem(i, menuItem);
         }
+
+        return menu;
+    }
+
+    /**
+     * Creates a paginated menu with the given title and populates it with items.
+     *
+     * @param title   the title of the paginated menu
+     * @param pages   the number of pages
+     * @return        the created paginated menu
+     */
+    public PaginatedMenu createPaginated(String title, int pages, EnumSet<Modifier> modifiers) {
+        if (patterns == null)
+            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+        PaginatedMenu menu = PaginatedMenu.create(title, rows, pages, modifiers);
+
+        int size = ((rows * 9) + 9) - 10;
+        for (int i = 0; i < size; i++) {
+            int row = i / 9;
+            int col = i % 9;
+
+            char item = patterns[row].charAt(col);
+            MenuItem menuItem = itemMap.get(item);
+
+            if (menuItem != null) menu.setItem(i, menuItem);
+        }
+
         return menu;
     }
 
@@ -121,11 +171,21 @@ public class MenuLayoutBuilder {
      * @return        the created paginated menu
      */
     public PaginatedMenu createPaginated(String title) {
-        PaginatedMenu menu = PaginatedMenu.create(title, Math.min(size / 9, 6), 3);
+        if (patterns == null)
+            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+        PaginatedMenu menu = PaginatedMenu.create(title, rows, 3);
 
+        int size = ((rows * 9) + 9) - 10;
         for (int i = 0; i < size; i++) {
-            menu.setItem(i, items[i]);
+            int row = i / 9;
+            int col = i % 9;
+
+            char item = patterns[row].charAt(col);
+            MenuItem menuItem = itemMap.get(item);
+
+            if (menuItem != null) menu.setItem(i, menuItem);
         }
+
         return menu;
     }
 }
