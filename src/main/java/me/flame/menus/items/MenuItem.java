@@ -1,14 +1,19 @@
 package me.flame.menus.items;
 
+import jdk.internal.vm.annotation.ForceInline;
+import lombok.Getter;
+import lombok.Setter;
 import me.flame.menus.components.nbt.ItemNbt;
+import me.flame.menus.events.ClickActionEvent;
+import me.flame.menus.menu.ActionResponse;
 
+import me.flame.menus.util.ItemResponse;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.inventory.ItemStack;
 
 import org.bukkit.inventory.meta.ItemMeta;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,7 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A Gui itemStack which was particularly made to have an action.
@@ -39,9 +45,13 @@ import java.util.function.Consumer;
  * }</pre>
  */
 @SuppressWarnings("unused")
+@SerializableAs("woody-menu")
 public final class MenuItem implements Cloneable, ConfigurationSerializable {
     @NotNull
-    Consumer<InventoryClickEvent> clickAction;
+    CompletableFuture<ItemResponse> clickAction;
+
+    @Getter @Setter
+    boolean async;
 
     @NotNull
     ItemStack itemStack;
@@ -49,15 +59,25 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
     @NotNull
     private final UUID uuid;
 
-    @ApiStatus.Obsolete
-    public MenuItem(ItemStack itemStack, @Nullable Consumer<InventoryClickEvent> action) {
+    public MenuItem(ItemStack itemStack, @Nullable ItemResponse action) {
         Objects.requireNonNull(itemStack);
         this.uuid =  UUID.randomUUID();
         this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
-        this.clickAction = action == null ? (event -> {}) : action;
+
+        this.clickAction = CompletableFuture
+                .completedFuture(action == null ? (slot, event) -> ActionResponse.DONE : action);
     }
 
-    public static @NotNull MenuItem of(ItemStack itemStack, @Nullable Consumer<InventoryClickEvent> action) {
+    private MenuItem(ItemStack itemStack, @Nullable ItemResponse action, UUID uuid) {
+        Objects.requireNonNull(itemStack);
+        this.uuid =  UUID.randomUUID();
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
+
+        this.clickAction = CompletableFuture
+            .completedFuture(action == null ? (slot, event) -> ActionResponse.DONE : action);
+    }
+
+    public static @NotNull MenuItem of(ItemStack itemStack, @Nullable ItemResponse action) {
         return new MenuItem(itemStack, action);
     }
 
@@ -65,12 +85,39 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
         return new MenuItem(itemStack, null);
     }
 
-    public @NotNull Consumer<InventoryClickEvent> getClickAction() {
+    @NotNull
+    public CompletableFuture<ItemResponse> getClickAction() {
         return clickAction;
     }
 
-    public void setClickAction(@NotNull Consumer<InventoryClickEvent> clickAction) {
+    @NotNull
+    public ItemResponse getClickActionNow(ItemResponse ifAbsent) {
+        return clickAction.getNow(ifAbsent);
+    }
+
+    /**
+     * Set the click action but always guaranteed to run asynchronously
+     * @apiNote for anyone who is new to asynchronous programming, it does not make your code faster, but prevents blocking the main thread and thus prevent slowing down the thread that runs your server.
+     * @param clickAction the clickAction
+     */
+    public void setClickActionAsync(@NotNull CompletableFuture<ItemResponse> clickAction) {
+        this.async = true;
         this.clickAction = clickAction;
+    }
+
+    /**
+     * Set the click action but always guaranteed to run asynchronously
+     * @apiNote for anyone who is new to asynchronous programming, it does not make your code faster, but prevents blocking the main thread and thus prevent slowing down the thread that runs your server.
+     * @param clickAction the clickAction
+     */
+    public void setClickActionAsync(@NotNull ItemResponse clickAction) {
+        this.async = true;
+        this.clickAction = CompletableFuture.completedFuture(clickAction);
+    }
+
+    public void setClickAction(@NotNull ItemResponse clickAction) {
+        this.async = false;
+        this.clickAction = CompletableFuture.completedFuture(clickAction);
     }
 
     @Contract(" -> new")
@@ -96,10 +143,10 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
 
     @Override
     public boolean equals(Object o) {
+        if (o == this) return true;
         if (!(o instanceof MenuItem)) return false;
-        MenuItem item = (MenuItem) o;
 
-        if (this == item) return true;
+        MenuItem item = (MenuItem) o;
         return uuid.equals(item.uuid) && itemStack.equals(item.itemStack);
     }
 
@@ -112,19 +159,22 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
         }
     }
 
-    public void click(InventoryClickEvent event) {
-        clickAction.accept(event);
+    @ForceInline
+    public CompletableFuture<ActionResponse> click(final int slot, final ClickActionEvent event) {
+        return async
+                ? clickAction.thenApplyAsync(ca -> ca.apply(slot, event)) // this is what's executing async btw
+                : clickAction.thenApply(ca -> ca.apply(slot, event));
     }
 
     @Override
     public @NotNull Map<String, Object> serialize() {
-        Map<String, Object> result = new LinkedHashMap<>();
+        final Map<String, Object> result = new LinkedHashMap<>(4);
 
         result.put("type", getType().name());
         result.put("uuid", uuid);
 
-        ItemMeta meta = itemStack.getItemMeta();
-        int amount = itemStack.getAmount();
+        final ItemMeta meta = itemStack.getItemMeta();
+        final int amount = itemStack.getAmount();
 
         if (amount != 1) result.put("amount", amount);
         if (meta != null) result.put("meta", meta);
@@ -132,16 +182,17 @@ public final class MenuItem implements Cloneable, ConfigurationSerializable {
         return result;
     }
 
-    public @NotNull MenuItem deserialize(@NotNull Map<String, Object> serialized) {
-        String type = (String) serialized.get("type");
-        int amount = (int) serialized.getOrDefault("amount", 1);
-        ItemMeta meta = (ItemMeta) serialized.get("meta");
-        UUID uuid = (UUID) serialized.get("uuid");
+    @NotNull
+    public static MenuItem deserialize(@NotNull Map<String, Object> serialized) {
+        final String type = (String) serialized.get("type");
+        final int amount = (int) serialized.getOrDefault("amount", 1);
+        final ItemMeta meta = (ItemMeta) serialized.get("meta");
+        final UUID uuid = (UUID) serialized.get("uuid");
 
-        ItemStack result = new ItemStack(Material.valueOf(type), amount);
+        final ItemStack result = new ItemStack(Material.valueOf(type), amount);
         if (meta != null) result.setItemMeta(meta);
 
-        return MenuItem.of(itemStack);
+        return new MenuItem(result, null, uuid);
     }
 
     @Override
