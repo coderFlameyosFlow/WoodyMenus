@@ -39,24 +39,6 @@ import java.util.Objects;
 /**
  * Class to set / get NBT tags from items.
  * I hate this class. I hate it. I hate it.
- */
-package me.flame.menus.components.nbt;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Objects;
-import java.util.logging.Level;
-
-/**
- * Class to set / get NBT tags from items.
- * I hate this class. I hate it. I hate it.
  * @author TriumphTeam
  */
 public final class LegacyNbt implements NbtWrapper {
