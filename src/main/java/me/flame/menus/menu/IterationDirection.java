@@ -36,7 +36,7 @@ public enum IterationDirection {
                 oldRow++;
             }
 
-            return new Slot(oldRow, oldCol);
+            return oldPos.setSlot(oldRow, oldCol);
         }
     },
 
@@ -58,10 +58,7 @@ public enum IterationDirection {
         @Override
         public Slot shift(Slot oldPos, int maxRows) {
             int col = oldPos.col + 1;
-            if (col > 9) {
-                return Slot.NaS;
-            }
-            return new Slot(oldPos.row, col);
+            return col > 9 ? Slot.NaS : oldPos.setSlot(oldPos.row, col);
         }
     },
 
@@ -69,10 +66,7 @@ public enum IterationDirection {
         @Override
         public Slot shift(Slot oldPos, int maxRows) {
             int col = oldPos.col - 1;
-            if (col < 0) {
-                return Slot.NaS;
-            }
-            return new Slot(oldPos.row, col);
+            return col < 0 ? Slot.NaS : oldPos.setSlot(oldPos.row, col);
         }
     },
 
@@ -80,12 +74,8 @@ public enum IterationDirection {
         @Override
         public Slot shift(Slot oldPos, int maxRows) {
             Slot upwardSlot = UPWARDS_ONLY.shift(oldPos, maxRows);
-            int row = upwardSlot.row;
-
             Slot rightSlot = RIGHT_ONLY.shift(oldPos, maxRows);
-            int col = rightSlot.col;
-
-            return new Slot(row, col);
+            return oldPos.setSlot(upwardSlot.row, rightSlot.col);
         }
     },
 
@@ -93,12 +83,8 @@ public enum IterationDirection {
         @Override
         public Slot shift(Slot oldPos, int maxRows) {
             Slot downwardSlot = DOWNWARDS_ONLY.shift(oldPos, maxRows);
-            int row = downwardSlot.row;
-
             Slot rightSlot = RIGHT_ONLY.shift(oldPos, maxRows);
-            int col = rightSlot.col;
-
-            return new Slot(row, col);
+            return oldPos.setSlot(downwardSlot.row, rightSlot.col);
         }
     },
 
@@ -106,12 +92,8 @@ public enum IterationDirection {
         @Override
         public Slot shift(Slot oldPos, int maxRows) {
             Slot upwardSlot = UPWARDS_ONLY.shift(oldPos, maxRows);
-            int row = upwardSlot.row;
-
             Slot leftSlot = LEFT_ONLY.shift(oldPos, maxRows);
-            int col = leftSlot.col;
-
-            return new Slot(row, col);
+            return oldPos.setSlot(upwardSlot.row, leftSlot.col);
         }
     },
 
@@ -119,12 +101,8 @@ public enum IterationDirection {
         @Override
         public Slot shift(Slot oldPos, int maxRows) {
             Slot downwardSlot = DOWNWARDS_ONLY.shift(oldPos, maxRows);
-            int row = downwardSlot.row;
-
             Slot leftSlot = LEFT_ONLY.shift(oldPos, maxRows);
-            int col = leftSlot.col;
-
-            return new Slot(row, col);
+            return oldPos.setSlot(downwardSlot.row, leftSlot.col);
         }
     },
 
@@ -141,7 +119,7 @@ public enum IterationDirection {
                 oldCol--;
             }
 
-            return new Slot(oldRow, oldCol);
+            return oldPos.setSlot(oldRow, oldCol);
         }
     },
 
@@ -158,7 +136,7 @@ public enum IterationDirection {
                 oldRow--;
             }
 
-            return new Slot(oldRow, oldCol);
+            return oldPos.setSlot(oldRow, oldCol);
         }
     };
 
