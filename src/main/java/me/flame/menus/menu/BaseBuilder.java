@@ -4,13 +4,21 @@ import lombok.NonNull;
 
 import me.flame.menus.modifiers.Modifier;
 
-import org.bukkit.ChatColor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumSet;
 import java.util.function.Consumer;
 
-@SuppressWarnings("unused")
+/**
+ * Base builder for all Menu implementation (builders)
+ * <p>
+ * A verbose builder way to make menus.
+ * @param <G> menu generic
+ * @param <B> recursive generic for type safe building
+ * @author flameyosflow
+ * @since 1.0.0
+ */
+@SuppressWarnings({ "unused", "unchecked" })
 public abstract class BaseBuilder<G, B extends BaseBuilder<G, B>> {
     @NotNull
     protected String title = "";
