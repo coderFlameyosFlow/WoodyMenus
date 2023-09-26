@@ -6,7 +6,6 @@ import me.flame.menus.items.MenuItem;
 import me.flame.menus.menu.fillers.MenuFiller;
 
 import org.bukkit.Material;
-import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -89,5 +88,77 @@ public final class PageDecoration implements Decorator {
                 }
             }
         }
+    }
+
+    public void fillRow(int row, Material borderMaterial) {
+        final int size = menu.getSize();
+
+        MenuItem itemStack = MenuItem.of(new ItemStack(borderMaterial));
+        for (Page page : menu.pageList) {
+            for (int i = 0; i < size; i++) {
+                if (i / 9 == row) page.setItem(i, itemStack);
+            }
+        }
+    }
+
+    public void fillRow(int row, ItemStack borderMaterial) {
+        final int size = menu.getSize();
+
+        MenuItem itemStack = MenuItem.of(borderMaterial);
+        for (Page page : menu.pageList) {
+            for (int i = 0; i < size; i++) {
+                if (i / 9 == row) page.setItem(i, itemStack);
+            }
+        }
+    }
+
+    public void fillRow(int row, MenuItem itemStack) {
+        final int size = menu.getSize();
+
+        for (Page page : menu.pageList) {
+            for (int i = 0; i < size; i++) {
+                if (i / 9 == row) page.setItem(i, itemStack);
+            }
+        }
+    }
+
+    public void fillArea(int length, int width, Material borderMaterial) {
+        final int size = menu.getSize();
+
+        MenuItem itemStack = MenuItem.of(new ItemStack(borderMaterial));
+        for (Page page : menu.pageList) {
+            for (int i = 0; i < size; i++) {
+                if (isInArea(i, length, width)) page.setItem(i, itemStack);
+            }
+        }
+    }
+
+    public void fillArea(int length, int width, ItemStack borderMaterial) {
+        final int size = menu.getSize();
+
+        MenuItem itemStack = MenuItem.of(borderMaterial);
+        for (Page page : menu.pageList) {
+            for (int i = 0; i < size; i++) {
+                if (isInArea(i, length, width)) page.setItem(i, itemStack);
+            }
+        }
+    }
+
+    public void fillArea(int length, int width, MenuItem itemStack) {
+        final int size = menu.getSize();
+
+        for (Page page : menu.pageList) {
+            for (int i = 0; i < size; i++) {
+                if (isInArea(i, length, width)) page.setItem(i, itemStack);
+            }
+        }
+    }
+
+    // simple geometry to check if a slot is in an area of L*W
+
+    private static boolean isInArea(int slot, int length, int width) {
+        int rows = length / 9;
+        int startRow = slot / 9;
+        return startRow < rows && slot % 9 < width;
     }
 }
