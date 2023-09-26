@@ -11,7 +11,15 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
-public class PageIterator implements Iterator<MenuItem> {
+/**
+ *
+ * @author FlameyosFlow
+ * @since 1.4.0
+ *
+ * MenuIterator alternative to iterate through Page instead
+ */
+@SuppressWarnings("unused")
+public final class PageIterator implements Iterator<MenuItem> {
     @NotNull
     private final Page page;
 
@@ -53,8 +61,7 @@ public class PageIterator implements Iterator<MenuItem> {
         this.direction = direction;
     }
 
-    public PageIterator(@NotNull IterationDirection direction,
-                        @NotNull Page page) {
+    public PageIterator(@NotNull IterationDirection direction, @NotNull Page page) {
         this.page = page;
         this.rows = page.rows();
         this.position = Slot.FIRST.copy();
@@ -67,7 +74,7 @@ public class PageIterator implements Iterator<MenuItem> {
      * @param emptyOnly  a boolean indicating whether to retrieve only empty slots
      * @return           the next empty slot in the menu, or null if no empty slot is found
      */
-    public Slot nextSlot(boolean emptyOnly) {
+    public @Nullable Slot nextSlot(boolean emptyOnly) {
         if (!emptyOnly) return nextSlot();
 
         while (true) {
