@@ -7,8 +7,16 @@ import org.jetbrains.annotations.NotNull;
 public final class Slot {
     int row, slot, col;
 
-    public static final Slot FIRST = new Slot(1, 1);
-    public static final Slot NaS = new Slot(8, 1);
+    /**
+     * First as in row 1, col 1.
+     * Slot = 1 (always)
+     */
+    public static final Slot FIRST = getFirst();
+
+    /**
+     * Not A Slot; a purposeful invalid slot to save performance and memory.
+     */
+    public static final Slot NaS = getNaS();
 
     public Slot(final int row, final int col) {
         this.row = row;
@@ -57,7 +65,9 @@ public final class Slot {
     public Slot setSlot(@NotNull final Slot slot) {
         this.row = slot.row;
         this.col = slot.col;
-        this.slot = slot.slot;
+
+        int preSlot = slot.slot;
+        this.slot = preSlot >= 54 ? -1 : preSlot;
         return this;
     }
 
@@ -118,5 +128,21 @@ public final class Slot {
      */
     public boolean isSlot() {
         return slot != -1;
+    }
+
+    // faster NaS (Not A Slot) alternative to creating a Slot like new Slot(8, 1);
+    @NotNull
+    private static Slot getNaS() {
+        Slot slot = new Slot(-1, -1, true);
+        slot.slot = -1;
+        return slot;
+    }
+
+    // faster FIRST slot compared to doing "new Slot(1, 1)"
+    @NotNull
+    private static Slot getFirst() {
+        Slot slot = new Slot(1, 1, true);
+        slot.slot = 1;
+        return slot;
     }
 }
