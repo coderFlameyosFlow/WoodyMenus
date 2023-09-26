@@ -40,6 +40,25 @@ import java.util.Objects;
  * Class to set / get NBT tags from items.
  * I hate this class. I hate it. I hate it.
  */
+package me.flame.menus.components.nbt;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Objects;
+import java.util.logging.Level;
+
+/**
+ * Class to set / get NBT tags from items.
+ * I hate this class. I hate it. I hate it.
+ * @author TriumphTeam
+ */
 public final class LegacyNbt implements NbtWrapper {
     public static final String PACKAGE_NAME = Bukkit.getServer().getClass().getPackage().getName();
     public static final String NMS_VERSION = PACKAGE_NAME.substring(PACKAGE_NAME.lastIndexOf(46) + 1);
@@ -75,7 +94,7 @@ public final class LegacyNbt implements NbtWrapper {
             asNMSCopyMethod = craftItemStackClass.getMethod("asNMSCopy", ItemStack.class);
             asBukkitCopyMethod = craftItemStackClass.getMethod("asBukkitCopy", craftItemStack);
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            Bukkit.getLogger().log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -229,7 +248,7 @@ public final class LegacyNbt implements NbtWrapper {
      * @param nmsItemStack The NMS ItemStack to get from.
      * @return The tag compound.
      */
-    public static Object getTag(final Object nmsItemStack) {
+    public static @Nullable Object getTag(final Object nmsItemStack) {
         try {
             return getTagMethod.invoke(nmsItemStack);
         } catch (IllegalAccessException | InvocationTargetException e) {
@@ -269,7 +288,7 @@ public final class LegacyNbt implements NbtWrapper {
      * @param itemStack The ItemStack to make NMS copy.
      * @return An NMS copy of the ItemStack.
      */
-    public static Object asNMSCopy(final ItemStack itemStack) {
+    public static @Nullable Object asNMSCopy(final ItemStack itemStack) {
         try {
             return asNMSCopyMethod.invoke(null, itemStack);
         } catch (IllegalAccessException | InvocationTargetException e) {
@@ -283,7 +302,7 @@ public final class LegacyNbt implements NbtWrapper {
      * @param nmsItemStack The NMS ItemStack to turn into {@link ItemStack}.
      * @return The new {@link ItemStack}.
      */
-    public static ItemStack asBukkitCopy(final Object nmsItemStack) {
+    public static @Nullable ItemStack asBukkitCopy(final Object nmsItemStack) {
         try {
             return (ItemStack) asBukkitCopyMethod.invoke(null, nmsItemStack);
         } catch (IllegalAccessException | InvocationTargetException e) {
@@ -316,5 +335,4 @@ public final class LegacyNbt implements NbtWrapper {
             return null;
         }
     }
-
 }
