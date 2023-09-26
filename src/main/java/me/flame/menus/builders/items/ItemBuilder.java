@@ -4,7 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings({  "unused" })
+@SuppressWarnings("unused")
 public class ItemBuilder extends BaseItemBuilder<ItemBuilder> {
     ItemBuilder(Material material, int amount) {
         super(material, amount);
