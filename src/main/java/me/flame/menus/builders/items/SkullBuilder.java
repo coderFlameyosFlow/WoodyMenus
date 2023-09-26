@@ -13,7 +13,6 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.Objects;
 import java.util.UUID;
@@ -31,9 +30,7 @@ public final class SkullBuilder extends BaseItemBuilder<SkullBuilder> {
     static {
         Field field;
         try {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            Class<?> itemMetaClass = Objects.requireNonNull(SkullUtil.skull().getItemMeta())
-                    .getClass();
+            Class<?> itemMetaClass = Objects.requireNonNull(SkullUtil.skull().getItemMeta()).getClass();
             field = itemMetaClass.getDeclaredField("profile");
             field.setAccessible(true);
         } catch (NoSuchFieldException e) {
@@ -50,7 +47,10 @@ public final class SkullBuilder extends BaseItemBuilder<SkullBuilder> {
     SkullBuilder(final @NotNull ItemStack itemStack) throws MenuException {
         super(itemStack);
         if (SkullUtil.isNotPlayerSkull(itemStack)) {
-            throw new MenuException("SkullBuilder requires the material to be a PLAYER_HEAD!");
+            throw new MenuException(
+                    "SkullBuilder requires the material to be a PLAYER_HEAD!" +
+                    "\nFix: Change material to a SKULL_ITEM or PLAYER_HEAD."
+            );
         }
     }
 
