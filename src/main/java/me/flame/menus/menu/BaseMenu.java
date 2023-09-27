@@ -92,7 +92,7 @@ public abstract class BaseMenu implements IMenu, RandomAccess {
 
     private void remove(int index) {
         int length = this.itemMap.length;
-        if (index <= 0 || index >= length) return;
+        if (index < 0 || index >= length) return;
 
         itemMap[index] = null;
     }
