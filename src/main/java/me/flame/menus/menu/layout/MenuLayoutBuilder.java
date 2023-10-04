@@ -69,12 +69,14 @@ public final class MenuLayoutBuilder {
      * @param  title  the title of the menu
      * @return        the created menu
      */
-    public Menu createMenu(String title) {
+    public @NotNull Menu createMenu(String title) {
         if (patterns == null)
-            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+            throw new IllegalStateException("No patterns specified. \nFix: use the pattern() method before creating the menu.");
+        else if (rows > 6 || rows < 1)
+            throw new IllegalStateException("Patterns array has too many rows (" + rows + "). \nFix: Reduce/increase the amount of strings in the array of pattern()");
         Menu menu = Menu.create(title, rows);
 
-        int size = ((rows * 9) + 9) - 10;
+        int size = rows * 9;
         for (int i = 0; i < size; i++) {
             int row = i / 9;
             int col = i % 9;
@@ -95,10 +97,12 @@ public final class MenuLayoutBuilder {
      */
     public Menu createMenu(String title, EnumSet<Modifier> modifiers) {
         if (patterns == null)
-            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+            throw new IllegalStateException("No patterns specified. \nFix: use the pattern() method before creating the menu.");
+        else if (rows > 6 || rows < 1)
+            throw new IllegalStateException("Patterns array has too many rows (" + rows + "). \nFix: Reduce/increase the amount of strings in the array of pattern()");
         Menu menu = Menu.create(title, rows, modifiers);
 
-        int size = ((rows * 9) + 9) - 10;
+        int size = rows * 9;
         for (int i = 0; i < size; i++) {
             int row = i / 9;
             int col = i % 9;
@@ -121,10 +125,12 @@ public final class MenuLayoutBuilder {
      */
     public PaginatedMenu createPaginated(String title, int pages) {
         if (patterns == null)
-            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+            throw new IllegalStateException("No patterns specified. \nFix: use the pattern() method before creating the menu.");
+        else if (rows > 6 || rows < 1)
+            throw new IllegalStateException("Patterns array has too many rows (" + rows + "). \nFix: Reduce/increase the amount of strings in the array of pattern()");
         PaginatedMenu menu = PaginatedMenu.create(title, rows, pages);
 
-        int size = ((rows * 9) + 9) - 10;
+        int size = rows * 9;
         for (int i = 0; i < size; i++) {
             int row = i / 9;
             int col = i % 9;
@@ -147,10 +153,12 @@ public final class MenuLayoutBuilder {
      */
     public PaginatedMenu createPaginated(String title, int pages, EnumSet<Modifier> modifiers) {
         if (patterns == null)
-            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+            throw new IllegalStateException("No patterns specified. \nFix: use the pattern() method before creating the menu.");
+        else if (rows > 6 || rows < 1)
+            throw new IllegalStateException("Patterns array has too many rows (" + rows + "). \nFix: Reduce/increase the amount of strings in the array of pattern()");
         PaginatedMenu menu = PaginatedMenu.create(title, rows, pages, modifiers);
 
-        int size = ((rows * 9) + 9) - 10;
+        int size = rows * 9;
         for (int i = 0; i < size; i++) {
             int row = i / 9;
             int col = i % 9;
@@ -166,16 +174,17 @@ public final class MenuLayoutBuilder {
 
     /**
      * Creates a paginated menu with the given title and populates it with items.
-     *
      * @param  title  the title of the paginated menu
      * @return        the created paginated menu
      */
     public PaginatedMenu createPaginated(String title) {
         if (patterns == null)
-            throw new IllegalStateException("No patterns specified. Use the pattern() method before creating the menu.");
+            throw new IllegalStateException("No patterns specified. \nFix: use the pattern() method before creating the menu.");
+        else if (rows > 6 || rows < 1)
+            throw new IllegalStateException("Patterns array has too many rows (" + rows + "). \nFix: Reduce/increase the amount of strings in the array of pattern()");
         PaginatedMenu menu = PaginatedMenu.create(title, rows, 3);
 
-        int size = ((rows * 9) + 9) - 10;
+        int size = rows * 9;
         for (int i = 0; i < size; i++) {
             int row = i / 9;
             int col = i % 9;
