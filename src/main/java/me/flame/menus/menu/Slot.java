@@ -140,7 +140,7 @@ public final class Slot {
 
     // faster FIRST slot compared to doing "new Slot(1, 1)"
     @NotNull
-    private static Slot getFirst() {
+    public static Slot getFirst() {
         Slot slot = new Slot(1, 1, true);
         slot.slot = 1;
         return slot;
