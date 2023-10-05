@@ -80,7 +80,7 @@ There can be a lot more too, other than these key features (for now), you might 
 ### Key features (Including but not limited to):
 - Updating safely recreates all the items; leading to *EXPECTED* automatic updating.
 - Supports legacy versions **<1.13.2** (and that impacts performance ._.)
-- Fast support (Or at least I try my best :D)
+- I don't have the worst support in the world (I try my best :D)
 - Actually fast and cares about performance
 - JVM friendly
 - Minimal
