@@ -127,6 +127,12 @@ public class MyPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         menu = createExampleMenu();
+
+        // For > 1.13.2
+        ItemNbt.wrapper(new Pdc(this));
+
+        // for <= 1.13.2 (Legacy)
+        ItemNbt.wrapper(new LegacyNbt());
     }
 
     ...
