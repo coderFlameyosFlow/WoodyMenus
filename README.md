@@ -126,6 +126,7 @@ public class MyPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        Menus.init(this);
         menu = createExampleMenu();
     }
 
