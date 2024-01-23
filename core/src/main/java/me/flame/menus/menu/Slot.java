@@ -47,18 +47,79 @@ public final class Slot {
     @CompileTimeConstant
     public static final Slot NaS = getNaS();
 
+    /**
+     * Creates a new slot with the specified row and column.
+     * @param row the row
+     * @param column the col
+     * @deprecated Use {@link #of(int, int)}, constructor will be private in 2.1.0
+     */
+    @Deprecated
     public Slot(final int row, final int column) {
-        this.row = row;
-        this.column = column;
+        this(row, column, false);
+        checkRowColumnSafety(slot, row, column);
 
         this.slot = (column + (row - 1) * 9) - 1;
         this.slot = this.slot >= 54 ? -1 : this.slot;
     }
 
-    public Slot(final int slot) {
+    private Slot(final int row, final int column, final int slot) {
+        this(row, column, false);
         this.slot = slot >= 54 ? -1 : slot;
-        this.row = (slot / 9) + 1;
-        this.column = (slot % 9) + 1;
+        checkRowColumnSafety(slot, row, column);
+    }
+
+    /**
+     * Creates a new slot with the specified row and column.
+     * @param slot the slot
+     * @deprecated Use {@link #of(int)}, constructor will be private in 2.1.0
+     */
+    @Deprecated
+    public Slot(final int slot) {
+        this(slot / 9 + 1, slot % 9 + 1, false);
+        checkRowColumnSafety(slot, row, column);
+
+        this.slot = slot >= 54 ? -1 : slot;
+    }
+
+    private static void checkRowColumnSafety(int slot, int row, int column) {
+        if (row > 6) {
+            throw new IllegalArgumentException(
+                    "Row expected to be between 1 and 6, got " + row +
+                    "\nFix: slot = (column + (row - 1) * 9) - 1, slot = " + slot
+            );
+        }
+        if (column > 9) {
+            throw new IllegalArgumentException(
+                    "Column expected to be between 1 and 9, got " + column +
+                    "\nFix: slot = (column + (row - 1) * 9) - 1, slot = " + slot
+            );
+        }
+    }
+
+    @Contract("_ -> new")
+    public static @NotNull Slot of(int slot) {
+        return new Slot(slot / 9 + 1, slot % 9 + 1, slot);
+    }
+
+    @Contract("_, _ -> new")
+    public static @NotNull Slot of(int row, int column) {
+        return new Slot(row, column, (column + (row - 1) * 9) - 1);
+    }
+
+    public static @NotNull Slot ofUnsafe(int slot) {
+        Slot position = new Slot((slot / 9) + 1, (slot % 9) + 1, true);
+
+        int positionSlot = (position.column + (position.row - 1) * 9) - 1;
+        position.slot = positionSlot >= 54 ? -1 : positionSlot;
+        return position;
+    }
+
+    public static Slot ofUnsafe(int row, int column) {
+        if (column > 9 || row > 6) return Slot.NaS;
+        Slot position = new Slot(row, column, true);
+        int positionSlot = (column + (row - 1) * 9) - 1;
+        position.slot = positionSlot >= 54 ? -1 : positionSlot;
+        return position;
     }
 
     // fast copy constructor
@@ -121,9 +182,7 @@ public final class Slot {
      */
     @NotNull
     public Slot copy() {
-        final Slot slot = new Slot(row, column, true);
-        slot.slot = this.slot;
-        return slot;
+        return new Slot(row, column, slot);
     }
 
     /**
@@ -138,7 +197,7 @@ public final class Slot {
     }
 
     /**
-     * Check if the slot is a valid slot.
+     * Check if the slot is valid.
      * @apiNote If the slot is equal to -1, it's invalid; fast check.
      * @return true if the slot does not equal -1.
      */
@@ -149,17 +208,13 @@ public final class Slot {
     // faster NaS (Not A Slot) alternative to creating a Slot like new Slot(8, 1);
     @NotNull
     private static Slot getNaS() {
-        Slot slot = new Slot(-1, -1, true);
-        slot.slot = -1;
-        return slot;
+        return new Slot(-1, -1, -1);
     }
 
     // faster FIRST slot compared to doing "new Slot(1, 1)"
     @NotNull
     public static Slot getFirst() {
-        Slot slot = new Slot(1, 1, true);
-        slot.slot = 0;
-        return slot;
+        return new Slot(1, 1, 0);
     }
 
     @Override
