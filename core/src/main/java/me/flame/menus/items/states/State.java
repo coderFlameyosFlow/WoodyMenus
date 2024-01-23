@@ -31,11 +31,11 @@ import java.util.function.Supplier;
  * @author FlameyosFlow
  * @since 2.0.0
  */
-@ApiStatus.Experimental
 public class State {
     private final TextHolder key;
     private final MenuItem item;
     private final Supplier<TextHolder> value;
+    private final Lore originalLore;
 
     private State(TextHolder key, Supplier<TextHolder> value, @NotNull MenuItem item) {
         this.item = item;
@@ -50,6 +50,7 @@ public class State {
 
         this.key = key;
         this.value = value;
+        this.originalLore = new Lore(stack.getItemMeta());
     }
 
     @Contract(value = "_, _, _ -> new", pure = true)
@@ -100,12 +101,13 @@ public class State {
     @Contract(pure = true)
     public void update() {
         ItemStack otherItem = item.getItemStack();
-        ItemMeta meta = Preconditions.checkNotNull(otherItem.getItemMeta());
-        Lore lore = new Lore(meta);
+        Lore lore = new Lore(originalLore);
 
         int size = lore.size();
-        for (int stringIndex = 0; stringIndex < size; stringIndex++) replaceWithKey(stringIndex, lore, key, value);
-        lore.toItemLore(item.getItemStack());
+        for (int stringIndex = 0; stringIndex < size; stringIndex++) {
+            replaceWithKey(stringIndex, lore, key, value);
+        }
+        lore.toItemLore(otherItem);
     }
 
     private static void replaceWithKey(int stringIndex, @NotNull Lore list, TextHolder key, Supplier<TextHolder> value) {
