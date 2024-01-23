@@ -77,6 +77,7 @@ public class Menu implements IMenu, RandomAccess, Serializable {
     protected int rows = 1, size;
 
     protected ItemData data;
+
     protected ItemResponse[] slotActions;
 
     @Getter
@@ -109,7 +110,6 @@ public class Menu implements IMenu, RandomAccess, Serializable {
         this.title = title;
         this.size = rows * 9;
         this.data = new ItemData(this);
-        this.slotActions = new ItemResponse[size];
         this.inventory = this.title.toInventory(this, size);
     }
 
@@ -119,9 +119,14 @@ public class Menu implements IMenu, RandomAccess, Serializable {
         this.title = title;
         this.size = type.getLimit();
         this.data = new ItemData(this);
-        this.slotActions = new ItemResponse[size];
         this.inventory = this.title.toInventory(this, type.getType());
     }
+
+    public ItemResponse[] getSlotActions() {
+        return (slotActions == null) ? (slotActions = new ItemResponse[size]) : slotActions;
+    }
+
+    public boolean hasSlotActions() { return slotActions != null; }
 
     public MenuFiller getFiller() { return defaultFiller; }
 
@@ -130,9 +135,7 @@ public class Menu implements IMenu, RandomAccess, Serializable {
     @NotNull
     public MenuIterator iterator() { return new MenuIterator(IterationDirection.HORIZONTAL, this); }
 
-    public MenuIterator iterator(IterationDirection direction) {
-        return new MenuIterator(direction, this);
-    }
+    public MenuIterator iterator(IterationDirection direction) {return new MenuIterator(direction, this); }
 
     public MenuIterator iterator(int startingRow, int startingCol, IterationDirection direction) {
         return new MenuIterator(startingRow, startingCol, direction, this);
@@ -144,9 +147,7 @@ public class Menu implements IMenu, RandomAccess, Serializable {
 
     public void forEach(Consumer<? super MenuItem> action) { data.forEach(action); }
 
-    public List<HumanEntity> getViewers() {
-        return inventory.getViewers();
-    }
+    public List<HumanEntity> getViewers() { return inventory.getViewers(); }
 
     public boolean addItem(@NotNull final ItemStack... items) {
         return (changed = data.addItem(items));
@@ -216,20 +217,16 @@ public class Menu implements IMenu, RandomAccess, Serializable {
         return Optional.ofNullable(getItem(itemDescription));
     }
 
-    public void addSlotAction(int slot, ItemResponse response) {
+    public void setSlotAction(int slot, ItemResponse response) {
+        ItemResponse[] slotActions = getSlotActions();
         slotActions[slot] = response;
     }
 
-    public void addSlotAction(@NotNull Slot slot, ItemResponse response) {
-        if (slot.isValid()) slotActions[slot.slot] = response;
-    }
-
-    public void removeSlotAction(int slot, ItemResponse response) {
-        slotActions[slot] = response;
-    }
-
-    public void removeSlotAction(@NotNull Slot slot, ItemResponse response) {
-        if (slot.isValid()) slotActions[slot.slot] = response;
+    public void setSlotAction(@NotNull Slot position, ItemResponse response) {
+        if (position.isValid()) {
+            ItemResponse[] slotActions = getSlotActions();
+            slotActions[position.slot] = response;
+        }
     }
 
     public @Nullable MenuItem getItem(Predicate<MenuItem> itemDescription) {
@@ -321,21 +318,14 @@ public class Menu implements IMenu, RandomAccess, Serializable {
     }
 
     public void close(@NotNull final HumanEntity player) {
-         if (!inventory.equals(player.getOpenInventory().getTopInventory())) return;
-        SCHEDULER.runTaskLater(plugin, player::closeInventory, 2L);
+        SCHEDULER.runTaskLater(plugin, player::closeInventory, 1L);
     }
 
-    public boolean addModifier(Modifier modifier) {
-        return modifiers.add(modifier);
-    }
+    public boolean addModifier(Modifier modifier) { return modifiers.add(modifier); }
 
-    public boolean removeModifier(Modifier modifier) {
-        return modifiers.remove(modifier);
-    }
+    public boolean removeModifier(Modifier modifier) { return modifiers.remove(modifier); }
 
-    public boolean addAllModifiers() {
-        return modifiers.addAll(Modifier.ALL);
-    }
+    public boolean addAllModifiers() { return modifiers.addAll(Modifier.ALL); }
 
     public void removeAllModifiers() {
         Modifier.ALL.forEach(modifiers::remove);
