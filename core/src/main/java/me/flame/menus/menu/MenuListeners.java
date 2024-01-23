@@ -86,8 +86,10 @@ public final class MenuListeners implements Listener {
             return;
         }
 
-        ItemResponse response = menu.slotActions[slot];
-        if (response != null) response.apply(slot, clicked);
+        if (menu.hasSlotActions()) {
+            ItemResponse response = menu.slotActions[slot];
+            if (response != null) response.apply(slot, clicked);
+        }
 
         if (modifierDetected(menu, action, clickedInventory.getType(), inventory.getType()))
             clicked.setResult(Event.Result.DENY);
@@ -171,16 +173,13 @@ public final class MenuListeners implements Listener {
     }
 
     private static boolean isOtherEvent(InventoryAction action, InventoryType type) {
-        return isOtherAction(action) && (type != PLAYER);
+        return (action == InventoryAction.CLONE_STACK || action == InventoryAction.UNKNOWN) &&
+               (type != PLAYER);
     }
 
     private static boolean isDraggingOnGui(int size, @NotNull Iterable<Integer> rawSlots) {
         for (int slot : rawSlots) if (slot < size) return true;
         return false;
-    }
-
-    private static boolean isOtherAction(final InventoryAction action) {
-        return action == InventoryAction.CLONE_STACK || action == InventoryAction.UNKNOWN;
     }
 
     private static void executeActions(ClickActionEvent event,
