@@ -117,21 +117,49 @@ public class MenuBuilder {
         return this;
     }
 
-    public void nextPageItem(int nextItemSlot, MenuItem nextItem) {
+    public MenuBuilder nextPageItem(int nextItemSlot, MenuItem nextItem) {
         this.nextItemSlot = nextItemSlot;
         this.nextItem = nextItem;
+        return this;
     }
 
-    public void previousPageItem(int previousItemSlot, MenuItem previousItem) {
+    public MenuBuilder previousPageItem(int previousItemSlot, MenuItem previousItem) {
         this.previousItemSlot = previousItemSlot;
         this.previousItem = previousItem;
+        return this;
+    }
+
+    public MenuBuilder nextPageItem(Slot nextItemSlot, MenuItem nextItem) {
+        if (!nextItemSlot.isValid()) {
+            throw new IllegalArgumentException(
+                "Next item slot is not valid" +
+                " (slot: " + nextItemSlot.slot + ", item: " + nextItem + ")" +
+                "\nFix: The slot is not in the range of 0-" + (rows * 9 - 1) +
+                " (rows: " + rows + "), and slot row: " + (nextItemSlot.row) + ", column: " + (nextItemSlot.column)
+            );
+        }
+        return nextPageItem(nextItemSlot.slot, nextItem);
+    }
+
+    public MenuBuilder previousPageItem(@NotNull Slot previousItemSlot, MenuItem previousItem) {
+        if (!previousItemSlot.isValid()) {
+            throw new IllegalArgumentException(
+                "Next item slot is not valid" +
+                " (slot: " + previousItemSlot.slot + ", item: " + nextItem + ")" +
+                "\nFix: The slot is not in the range of 0-" + (rows * 9 - 1) +
+                " (rows: " + rows + "), and slot row: " + (previousItemSlot.row) + ", column: " + (previousItemSlot.column)
+            );
+        }
+        return previousPageItem(previousItemSlot.slot, previousItem);
     }
 
     @NotNull
     @Contract(" -> new")
     public Menu normal() {
         checkRequirements(rows, title);
-        return type == MenuType.CHEST ? Menu.create(title, rows, modifiers) : Menu.create(title, type, modifiers);
+        return type == MenuType.CHEST
+                ? Menu.create(title, rows, modifiers)
+                : Menu.create(title, type, modifiers);
     }
 
     @NotNull
