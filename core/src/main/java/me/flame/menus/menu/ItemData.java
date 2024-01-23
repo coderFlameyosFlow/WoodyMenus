@@ -48,7 +48,11 @@ public class ItemData {
         boolean changed = false;
         for (final ItemStack item : items) {
             MenuItem menuItem = MenuItem.of(item);
-            if (this.add(slot, menuItem, notAddedItems)) return changed;
+            try {
+                if (this.add(slot, menuItem, notAddedItems)) return changed;
+            } catch (IndexOutOfBoundsException ignored) {
+                if (size(slot, menu.size, menu.rows, menuItem, notAddedItems)) return false;
+            }
             changed = true;
             slot++;
         }
@@ -61,13 +65,16 @@ public class ItemData {
                         @NotNull final MenuItem guiItem,
                         @NotNull final List<MenuItem> notAddedItems) {
         while (items[slot] != null) slot++;
-        if (slot > menu.size) {
-            if (menu.rows == 6) return true;
-            notAddedItems.add(guiItem);
-            return false;
-        }
+        if (size(slot, menu.size, menu.rows, guiItem, notAddedItems)) return true;
 
         items[slot] = guiItem;
+        return false;
+    }
+
+    private static boolean size(int slot, int size, int rows, MenuItem guiItem, List<MenuItem> notAddedItems) {
+        if (slot < size) return false;
+        if (rows == 6) return true;
+        notAddedItems.add(guiItem);
         return false;
     }
 
@@ -119,8 +126,8 @@ public class ItemData {
         return items[i];
     }
 
-    public MenuItem getItem(Slot i) {
-        return i.isValid() ? items[i.slot] : null;
+    public MenuItem getItem(Slot position) {
+        return position.isValid() ? items[position.slot] : null;
     }
 
     public void forEach(Consumer<? super MenuItem> action) {
@@ -171,7 +178,7 @@ public class ItemData {
         return items.length;
     }
 
-    public void removeItem(Slot slot) {
+    public void removeItem(@NotNull Slot slot) {
         if (slot.isValid()) removeItem(slot.slot);
     }
 
