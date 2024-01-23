@@ -7,6 +7,7 @@ import org.apache.commons.lang.Validate;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -19,12 +20,17 @@ public class Lore implements Iterable<TextHolder> {
     private final ItemMeta meta;
     private final List<TextHolder> lore;
 
-    private static final Lore EMPTY = new Lore(null);
+    private static final Lore EMPTY = new Lore((ItemMeta) null);
     private static final List<TextHolder> EMPTY_LORE = new ArrayList<>(0);
 
     public Lore(ItemMeta meta) {
         this.meta = meta;
         this.lore = (CompHolder.isNativeAdventureSupport()) ? lore(meta) : getLore(meta);
+    }
+    @Contract(pure = true)
+    public Lore(@NotNull Lore lore) {
+        this.meta = lore.meta;
+        this.lore = lore.lore;
     }
 
     private static @NotNull List<TextHolder> lore(ItemMeta meta) {
