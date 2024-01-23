@@ -75,7 +75,7 @@ public final class MenuItem implements Nameable, Cloneable, Serializable, Compar
         this.clickAction = CompletableFuture.completedFuture(action == null ? (slot, event) -> ActionResponse.EMPTY : action);
     }
 
-    private MenuItem(ItemStack itemStack, @Nullable ItemResponse action, UUID uuid) {
+    private MenuItem(ItemStack itemStack, @Nullable ItemResponse action, @NotNull UUID uuid) {
         Objects.requireNonNull(itemStack);
         this.uuid =  UUID.randomUUID();
         this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
@@ -249,12 +249,10 @@ public final class MenuItem implements Nameable, Cloneable, Serializable, Compar
     }
 
     public void removeState(State state) {
-        if (!hasStates()) return;
         getStates().remove(state);
     }
 
     public void removeState(int state) {
-        if (!hasStates()) return;
         getStates().remove(state);
     }
 
