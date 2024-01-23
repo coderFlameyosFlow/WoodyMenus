@@ -1,294 +1,268 @@
 package me.flame.menus.items;
 
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import me.flame.menus.adventure.TextHolder;
+import lombok.Getter;
+import lombok.Setter;
+
+import me.flame.menus.components.nbt.ItemNbt;
+import me.flame.menus.events.ClickActionEvent;
+import me.flame.menus.items.states.State;
+import me.flame.menus.menu.ActionResponse;
 import me.flame.menus.util.ItemResponse;
-import me.flame.menus.util.VersionHelper;
 
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemFlag;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.Nameable;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.Serializable;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static org.bukkit.ChatColor.translateAlternateColorCodes;
-
+/**
+ * A Gui itemStack which was particularly made to have an action.
+ * <p>
+ * Good example of using "MenuItem":
+ * <pre>{@code
+ *      var menuItem = ...;
+ *      menuItem.setClickAction(event -> {
+ *          ...
+ *      });
+ *
+ *      // implementing a new itemStack:
+ *      menu.addItem(ItemBuilder.of(itemStack, 2) // 2 is the amount of items you get from this "ItemBuilder"
+ *                                  .setName(...).setLore(...)
+ *                                  .buildItem(() -> ...); // ItemBuilder#build will give you a normal ItemStack
+ *      // the lambda (Consumer) at ItemBuilder#buildItem(Consumer) is optional and you do not have to provide an action, you can use ItemBuilder#buildItem()
+ *
+ *      // editing the item stack
+ *      menuItem.editor() // use methods, such as
+ *              .setName("Pumpkin")
+ *              .setLore("This is a random item named a Pumpkin")
+ *              .done(); // no need to set item again in the menu but you can.
+ * }</pre>
+ */
 @SuppressWarnings("unused")
-public class ItemEditor {
+@SerializableAs("woody-menu")
+public final class MenuItem implements Nameable, Cloneable, Serializable, Comparable<MenuItem>, ConfigurationSerializable {
     @NotNull
-    protected final ItemStack item;
+    CompletableFuture<ItemResponse> clickAction;
+
+    @Getter @Setter
+    boolean async = false;
 
     @NotNull
-    protected final MenuItem menuItem;
+    ItemStack itemStack;
 
     @NotNull
-    protected CompletableFuture<ItemResponse> clickAction;
+    private final UUID uuid;
 
-    protected final ItemMeta meta;
+    private List<State> states;
+    private Map<UUID, Long> usageCooldown;
 
-    protected final boolean hasNoItemMeta;
+    private MenuItem(ItemStack itemStack, @Nullable ItemResponse action) {
+        Objects.requireNonNull(itemStack);
+        this.uuid =  UUID.randomUUID();
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
 
-    public ItemEditor(MenuItem item) {
-        this.menuItem = item;
-        this.item = item.itemStack;
-        this.clickAction = item.clickAction;
-        this.meta = this.item.getItemMeta();
-        this.hasNoItemMeta = this.meta == null;
+        this.clickAction = CompletableFuture.completedFuture(action == null ? (slot, event) -> ActionResponse.EMPTY : action);
     }
 
-    /**
-     * Edits the name of the itemStack to whatever the provided title is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param title the new name of the title
-     * @return the builder for chaining
-     */
-    public ItemEditor setName(String title) {
-        return this.setName(title, true);
+    private MenuItem(ItemStack itemStack, @Nullable ItemResponse action, @NotNull UUID uuid) {
+        Objects.requireNonNull(itemStack);
+        this.uuid =  UUID.randomUUID();
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
+
+        this.clickAction = CompletableFuture.completedFuture(action == null ? (slot, event) -> ActionResponse.DONE : action);
     }
 
-    /**
-     * Sets the glow effect on the item.
-     *
-     * @param  glow  true to add enchantment and hide it, false to remove enchantment and show it
-     * @apiNote Will hide the enchantments by default.
-     * @return       the builder for chaining
-     */
-    public ItemEditor setGlow(boolean glow) {
-        // add enchantment and hide it if "glow" is true
-        if (this.hasNoItemMeta) return this;
-        if (!glow) {
-            this.meta.removeEnchant(Enchantment.DURABILITY);
-            this.meta.removeItemFlags(ItemFlag.HIDE_ENCHANTS);
-            return this;
+    public static @NotNull MenuItem of(ItemStack itemStack, @Nullable ItemResponse action) {
+        return new MenuItem(itemStack, action);
+    }
+
+    public static @NotNull MenuItem of(ItemStack itemStack) {
+        return new MenuItem(itemStack, null);
+    }
+
+    @NotNull
+    public CompletableFuture<ItemResponse> getClickAction() {
+        return clickAction;
+    }
+
+    @NotNull
+    public ItemResponse getClickActionNow(ItemResponse ifAbsent) {
+        return clickAction.getNow(ifAbsent);
+    }
+
+    public void setClickAction(@NotNull ItemResponse clickAction) {
+        this.clickAction = CompletableFuture.completedFuture(clickAction);
+    }
+
+    @Contract(" -> new")
+    public @NotNull ItemEditor editor() {
+        return new ItemEditor(this);
+    }
+
+    @Contract(" -> new")
+    public @NotNull SkullItemEditor skullEditor() {
+        return new SkullItemEditor(this);
+    }
+
+    public @NotNull ItemStack getItemStack() {
+        return itemStack;
+    }
+
+    public UUID getUniqueId() {
+        return uuid;
+    }
+
+    public void setItemStack(ItemStack itemStack) {
+        this.itemStack = ItemNbt.setString(itemStack, "woody-menu", uuid.toString());
+    }
+
+    public @NotNull Material getType() {
+        return itemStack.getType();
+    }
+
+    @Override
+    public boolean equals(Object item) {
+        if (item == this) return true;
+        if (!(item instanceof MenuItem)) return false;
+        return uuid.equals(((MenuItem) item).uuid);
+    }
+
+    @Override
+    public @NotNull MenuItem clone() {
+        try {
+            return (MenuItem) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
         }
-        this.meta.addEnchant(Enchantment.DURABILITY, 1, true);
-        this.meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        return this;
     }
 
-    /**
-     * Edits the name of the itemStack to whatever the provided title is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param title the new name of the title
-     * @return the builder for chaining
-     */
-    public ItemEditor setName(String title, boolean colorize) {
-        if (this.hasNoItemMeta) return this;
-        this.meta.setDisplayName(colorize
-                ? translateAlternateColorCodes('&', title)
-                : title);
-        return this;
+    public CompletableFuture<ActionResponse> click(final int slot, final ClickActionEvent event) {
+        return async
+                ? clickAction.thenApplyAsync(ca -> ca.apply(slot, event))
+                : clickAction.thenApply(ca -> ca.apply(slot, event));
     }
 
-    /**
-     * Edits the name of the itemStack to whatever the provided title is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param title the new name of the title
-     * @return the builder for chaining
-     */
-    public ItemEditor name(TextHolder title, boolean colorize) {
-        if (this.hasNoItemMeta) return this;
-        title.asItemDisplayName(meta);
-        return this;
+    @Override
+    public @NotNull Map<String, Object> serialize() {
+        final Map<String, Object> result = new LinkedHashMap<>(4);
+        result.put("type", getType().name());
+        result.put("uuid", uuid);
+
+        final ItemMeta meta = itemStack.getItemMeta();
+        final int amount = itemStack.getAmount();
+        if (amount != 1) result.put("amount", amount);
+        if (meta != null) result.put("meta", meta);
+
+        return result;
     }
 
+    @NotNull
+    public static MenuItem deserialize(@NotNull Map<String, Object> serialized) {
+        final String type = (String) serialized.get("type");
+        final int amount = (int) serialized.getOrDefault("amount", 1);
+        final ItemMeta meta = (ItemMeta) serialized.get("meta");
+        final UUID uuid = (UUID) serialized.get("uuid");
 
-    /**
-     * Edits the lore of the itemStack to whatever the provided lore is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param lore the new lore of the itemStack
-     * @return the builder for chaining
-     */
-    public ItemEditor setLore(String... lore) {
-        return this.setLore(List.of(lore));
+        final ItemStack result = new ItemStack(Material.valueOf(type), amount);
+        if (meta != null) result.setItemMeta(meta);
+
+        return new MenuItem(result, null, uuid);
     }
 
-
-    /**
-     * Edits the lore of the itemStack to whatever the provided lore is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param lore the new lore of the itemStack
-     * @return the builder for chaining
-     */
-    public ItemEditor setTextLore(List<TextHolder> lore) {
-        this.setTextLore(lore.toArray(TextHolder[]::new));
-        return this;
+    @Override
+    public int hashCode() {
+        return uuid.hashCode(); // they provide a fast hashcode
     }
 
-    /**
-     * Edits the lore of the itemStack to whatever the provided lore is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param lore the new lore of the itemStack
-     * @return the builder for chaining
-     */
-    public ItemEditor setLore(List<String> lore) {
-        if (this.hasNoItemMeta) return this;
-        int loreSize = lore.size();
-        List<String> ogLore = new ArrayList<>(loreSize);
-        for (String string : lore) {
-            ogLore.add(translateAlternateColorCodes('&', string));
+    @Override
+    public int compareTo(@NotNull MenuItem menuItem) {
+        return uuid.compareTo(menuItem.uuid);
+    }
+
+    private List<State> getStates() {
+        if (states == null)
+            states = new ArrayList<>(5);
+        return states;
+    }
+
+    private Map<UUID, Long> getUsageCooldown() {
+        if (usageCooldown == null)
+            usageCooldown = new HashMap<>(10);
+        return usageCooldown;
+    }
+
+    @Nullable
+    @Override
+    public String getCustomName() {
+        ItemMeta itemMeta = itemStack.getItemMeta();
+        return itemMeta == null ? null : itemMeta.getDisplayName();
+    }
+
+    @Override
+    public void setCustomName(@Nullable String s) {
+        editor().setName(spigotify(itemStack, s)).done();
+    }
+
+    private static @NotNull String spigotify(ItemStack itemStack, String s) {
+        if (s == null || s.isEmpty()) {
+            String name = itemStack.getType().name();
+
+            boolean capitalizeNext = false;
+            StringBuilder builder = new StringBuilder(name.length());
+            for (char character : name.toCharArray()) {
+                if (character == '_') {
+                    builder.append(' ');
+                    capitalizeNext = true;
+                }
+                builder.append(capitalizeNext ? character : Character.toLowerCase(character));
+            }
+            return builder.toString();
         }
-        this.meta.setLore(ogLore);
-        return this;
+        return ChatColor.translateAlternateColorCodes('&', s);
     }
 
-    /**
-     * Edits the lore of the itemStack to whatever the provided lore is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param colorized whether to colorize it or not
-     * @param lore the new lore of the itemStack
-     * @return the builder for chaining
-     */
-    public ItemEditor setLore(boolean colorized, String... lore) {
-        return this.setLore(colorized, List.of(lore));
+    public void updateStates() {
+        getStates().forEach(State::update);
     }
 
-    /**
-     * Edits the lore of the itemStack to whatever the provided lore is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param colorized whether to colorize it or not
-     * @param lore the new lore of the itemStack
-     * @return the builder for chaining
-     */
-    public ItemEditor setLore(boolean colorized, List<String> lore) {
-        if (this.hasNoItemMeta) return this;
-        if (colorized) return this.setLore(lore);
-        this.meta.setLore(lore);
-        return this;
+    public boolean hasStates() {
+        return states != null && !states.isEmpty();
     }
 
-    /**
-     * Edits the lore of the itemStack to whatever the provided lore is.
-     * <p>
-     * Automatically colorized, so no need to try to colorize it again.
-     * @param lore the new lore of the itemStack
-     * @return the builder for chaining
-     */
-    public ItemEditor setTextLore(TextHolder... lore) {
-        if (this.hasNoItemMeta) return this;
-        int loreSize = lore.length;
-        List<TextHolder> ogLore = new ArrayList<>(loreSize);
-        for (TextHolder string : lore) string.asItemLoreAtEnd(meta);
-        return this;
+    public boolean hasCooldowns() {
+        return usageCooldown != null && !usageCooldown.isEmpty();
     }
 
-    /**
-     * Enchant the itemStack regularly
-     * @param enchantment the enchantment
-     * @return the builder for chaining
-     */
-    public ItemEditor enchant(Enchantment enchantment) {
-        if (this.hasNoItemMeta) return this;
-        this.meta.addEnchant(enchantment, 1, false);
-        return this;
+    public void addState(State state) {
+        getStates().add(state);
     }
 
-    /**
-     * Enchant the itemStack regularly
-     * @param enchantment the enchantment
-     * @param level the level of the enchantment
-     * @return the builder for chaining
-     */
-    public ItemEditor enchant(Enchantment enchantment, int level) {
-        if (this.hasNoItemMeta) return this;
-        this.meta.addEnchant(enchantment, level, false);
-        return this;
+    public void removeState(State state) {
+        getStates().remove(state);
     }
 
-    /**
-     * Enchant the itemStack regularly
-     * @param enchantment the enchantment
-     * @param level the level of the enchantment
-     * @param ignoreEnchantRestriction ignore the enchant restriction or not (max level depends on the enchantment)
-     * @return the builder for chaining
-     */
-    public ItemEditor enchant(Enchantment enchantment, int level, boolean ignoreEnchantRestriction) {
-        if (this.hasNoItemMeta) return this;
-        this.meta.addEnchant(enchantment, level, ignoreEnchantRestriction);
-        return this;
+    public void removeState(int state) {
+        getStates().remove(state);
     }
 
-    /**
-     * Set the amount of items to a specific provided amount
-     * <p>
-     * guaranteed to fail and return if over a stack
-     * @param amount the provided amount
-     * @return the builder for chaining
-     */
-    public ItemEditor setAmount(int amount) {
-        this.item.setAmount(amount);
-        return this;
+    public boolean isOnCooldown(Player player) {
+        if (!hasCooldowns()) return false;
+        Long cooldown = getUsageCooldown().get(player.getUniqueId());
+        return cooldown != null && cooldown < System.currentTimeMillis();
     }
 
-    /**
-     * add an amount of items to a specific provided amount
-     * <p>
-     * guaranteed to fail and return if over a stack
-     * @param amount the provided amount
-     * @return the builder for chaining
-     */
-    public ItemEditor addAmount(int amount) {
-        this.item.setAmount(item.getAmount() + amount);
-        return this;
-    }
-
-    public ItemEditor setCustomModelData(Integer customModelData) {
-        if (VersionHelper.IS_CUSTOM_MODEL_DATA)
-            this.meta.setCustomModelData(customModelData);
-        return this;
-    }
-
-    public ItemEditor setAction(@NotNull ItemResponse event) {
-        this.clickAction = CompletableFuture.completedFuture(event);
-        return this;
-    }
-
-    /**
-     * @deprecated Very bad way for async actions, use {@link MenuItem#setAsync(boolean)}
-     */
-    @Deprecated
-    @ApiStatus.ScheduledForRemoval(inVersion = "2.1.0")
-    public ItemEditor setActionAsync(@NotNull CompletableFuture<ItemResponse> event) {
-        this.clickAction = event;
-        return this;
-    }
-
-    /**
-     * @deprecated Very bad way for async actions, use {@link MenuItem#setAsync(boolean)}
-     */
-    @Deprecated
-    @ApiStatus.ScheduledForRemoval(inVersion = "1.7.0")
-    public ItemEditor setActionAsync(@NotNull ItemResponse event) {
-        this.clickAction = CompletableFuture.supplyAsync(() -> event);
-        return this;
-    }
-
-    /**
-     * Calling this method means you're finally done.
-     * <p>
-     * and also that you want the new itemStack as you edited everything you need
-     * @return the new menu itemStack
-     */
-    @CanIgnoreReturnValue
-    @SuppressWarnings("UnusedReturnValue")
-    public MenuItem done() {
-        this.item.setItemMeta(meta);
-        menuItem.itemStack = this.item;
-        menuItem.clickAction = clickAction;
-        return menuItem;
+    public void addCooldown(@NotNull Player player, long millis) {
+        getUsageCooldown().put(player.getUniqueId(), System.currentTimeMillis() + millis);
     }
 }
