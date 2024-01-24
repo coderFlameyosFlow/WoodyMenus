@@ -2,7 +2,6 @@ package me.flame.menus.menu;
 
 import me.flame.menus.items.MenuItem;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
@@ -75,6 +74,4 @@ public interface Pagination {
      * @return The number of pages
      */
     int getPagesSize();
-
-    @NotNull ItemData getCurrentPage();
 }
