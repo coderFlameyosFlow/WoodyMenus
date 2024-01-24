@@ -13,15 +13,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.NoSuchElementException;
 
 @SuppressWarnings({ "deprecation", "ForLoopReplaceableByForEach" })
 public class Lore implements Iterable<TextHolder> {
     private final ItemMeta meta;
-    private final List<TextHolder> lore;
+    private TextHolder[] lore;
 
     private static final Lore EMPTY = new Lore((ItemMeta) null);
-    private static final List<TextHolder> EMPTY_LORE = new ArrayList<>(0);
+    private static final TextHolder[] EMPTY_LORE = new TextHolder[0];
 
     public Lore(ItemMeta meta) {
         this.meta = meta;
@@ -33,7 +33,7 @@ public class Lore implements Iterable<TextHolder> {
         this.lore = lore.lore;
     }
 
-    private static @NotNull List<TextHolder> lore(ItemMeta meta) {
+    private static @NotNull TextHolder[] lore(ItemMeta meta) {
         if (meta == null || !meta.hasLore()) return EMPTY_LORE;
         List<Component> components = meta.lore();
         Validate.notNull(components);
@@ -43,10 +43,10 @@ public class Lore implements Iterable<TextHolder> {
         for (int componentIndex = 0; componentIndex < size; componentIndex++) {
             lore.add(CompHolder.of(components.get(componentIndex)));
         }
-        return lore;
+        return lore.toArray(TextHolder[]::new);
     }
 
-    private static @NotNull List<TextHolder> getLore(ItemMeta meta) {
+    private static @NotNull TextHolder[] getLore(ItemMeta meta) {
         if (meta == null || !meta.hasLore()) return EMPTY_LORE;
         List<String> components = meta.getLore();
         Validate.notNull(components);
@@ -56,7 +56,7 @@ public class Lore implements Iterable<TextHolder> {
         for (int componentIndex = 0; componentIndex < size; componentIndex++) {
             lore.add(CompHolder.of(components.get(componentIndex)));
         }
-        return lore;
+        return lore.toArray(TextHolder[]::new);
     }
 
     public static Lore empty() {
@@ -64,30 +64,57 @@ public class Lore implements Iterable<TextHolder> {
     }
 
     public int size() {
-        return lore.size();
+        return lore.length;
     }
 
     public TextHolder get(int stringIndex) {
-        return lore.get(stringIndex);
+        if (stringIndex >= lore.length) return null;
+        return lore[stringIndex];
     }
 
     @NotNull
     @Override
     public Iterator<TextHolder> iterator() {
-        return lore.listIterator();
-    }
-
-    @Override
-    public void forEach(Consumer<? super TextHolder> action) {
-        lore.forEach(action);
+        return new TextHolderIterator(this);
     }
 
     public void set(int stringIndex, TextHolder of) {
-        lore.set(stringIndex, of);
+        if (stringIndex >= lore.length) return;
+        lore[stringIndex] = of;
     }
 
-    public void toItemLore(ItemStack itemStack) {
+    public void toItemLore(ItemStack itemStack, boolean setMeta) {
         for (TextHolder textHolder : lore) textHolder.asItemLoreAtEnd(meta);
-        itemStack.setItemMeta(meta);
+        if (setMeta) itemStack.setItemMeta(meta);
+    }
+
+    public void copyFrom(TextHolder[] newLore) {
+        this.lore = newLore;
+    }
+
+    public static class TextHolderIterator implements Iterator<TextHolder> {
+        private final Lore lore;
+        private int index;
+        private final int length;
+
+        @Contract(pure = true)
+        public TextHolderIterator(@NotNull Lore lore) {
+            this.lore = lore;
+            this.length = lore.lore.length;
+        }
+
+
+        @Override
+        public boolean hasNext() {
+            return index < length;
+        }
+
+        @Override
+        public TextHolder next() {
+            if (index >= length) throw new NoSuchElementException();
+            TextHolder holder = lore.get(index);
+            index++;
+            return holder;
+        }
     }
 }
