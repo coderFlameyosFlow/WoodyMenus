@@ -5,12 +5,14 @@ This is ~~full of stolen code~~ based off [triumph-gui](https://github.com/Trium
 
 ## Why Woody?
 - Woody is really easy
+- 
   Woody is very easy to get started by looking at a few java documentation.
   Even easier when you come from triumph-gui because it's somewhat similar to triumph-gui.
   Just create the menu via `Menu.create` or use `Menu.builder` to build a Menu
   Creating a paginated menu is JUST as easy.
 
 - Woody is very Flexible
+- 
   With all these actions for menus, default click actions, outside, top, bottom,
   actions before animations, actions after page change, interfaces, and etc, you just
   CAN'T resist the incredible flexibility of Woody, and not just the actions and some
