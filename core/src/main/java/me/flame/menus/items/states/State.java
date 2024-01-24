@@ -107,7 +107,7 @@ public class State {
         for (int stringIndex = 0; stringIndex < size; stringIndex++) {
             replaceWithKey(stringIndex, lore, key, value);
         }
-        lore.toItemLore(otherItem);
+        lore.toItemLore(otherItem, true);
     }
 
     private static void replaceWithKey(int stringIndex, @NotNull Lore list, TextHolder key, Supplier<TextHolder> value) {
