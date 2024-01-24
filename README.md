@@ -8,15 +8,16 @@ This is ~~full of stolen code~~ based off [triumph-gui](https://github.com/Trium
 
   Woody is very easy to get started by looking at a few java documentation.
   Even easier when you come from triumph-gui because it's somewhat similar to triumph-gui.
-  Just create the menu via `Menu.create` or use `Menu.builder` to build a Menu
+  Just create the menu via `Menu.create` or use `Menu.builder` to build a Menu.
+  
   Creating a paginated menu is JUST as easy.
 
 - Woody is very Flexible
 
   With all these actions for menus, default click actions, outside, top, bottom,
-  actions before animations, actions after page change, interfaces, and etc, you just
-  CAN'T resist the incredible flexibility of Woody, and not just the actions and some
-  of common interfaces.
+  actions before animations, actions after page change, interfaces, etc, you just CAN'T resist the incredible flexibility of Woody.
+
+  and not just the actions and some of common interfaces.
   
 - Woody is powerful and fast
   
@@ -37,8 +38,7 @@ This is ~~full of stolen code~~ based off [triumph-gui](https://github.com/Trium
     Menu menu = ...;
     menu.setUpdateStatesOnUpdate(true); // this exists for performance reasons
     ```
-  - Menu#getFiller and PaginatedMenu#getPageDecoration to make
-    decorating menus easy in a fast manner.
+  - Menu#getFiller and PaginatedMenu#getPageDecoration to make decorating menus easy in a fast manner.
 
     For example: ~~This will make your code better since your code sux anyways~~
     ```java
