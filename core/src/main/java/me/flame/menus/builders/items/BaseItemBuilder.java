@@ -1,10 +1,14 @@
 package me.flame.menus.builders.items;
 
+import me.flame.menus.adventure.Lore;
+import me.flame.menus.adventure.TextHolder;
 import me.flame.menus.items.MenuItem;
 import me.flame.menus.util.ItemResponse;
 import me.flame.menus.util.VersionHelper;
 
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Damageable;
 import org.bukkit.inventory.ItemFlag;
@@ -13,7 +17,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.bukkit.ChatColor.translateAlternateColorCodes;
@@ -23,6 +26,8 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     final ItemStack item;
 
     ItemMeta meta;
+
+    private static final ItemFlag[] flags = ItemFlag.values();
 
     private final boolean hasNoItemMeta;
 
@@ -83,9 +88,7 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
      * @return the builder for chaining
      */
     public B setLore(String... lore) {
-        if (this.hasNoItemMeta) return (B) this;
-        this.meta.setLore(Arrays.asList(lore));
-        return (B) this;
+        return this.setLore(List.of(lore));
     }
 
     /**
@@ -96,6 +99,32 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     public B setLore(List<String> lore) {
         if (this.hasNoItemMeta) return (B) this;
         this.meta.setLore(lore);
+        return (B) this;
+    }
+
+    /**
+     * Sets the lore of the itemStack to whatever the provided lore is.
+     * @param lore the new lore
+     * @return the builder for chaining
+     */
+    public B setLore(TextHolder... lore) {
+        if (this.hasNoItemMeta) return (B) this;
+        Lore itemLore = new Lore(meta);
+        itemLore.copyFrom(lore);
+        itemLore.toItemLore(item, false);
+        return (B) this;
+    }
+
+    /**
+     * Sets the lore of the itemStack to whatever the provided lore is.
+     * @param lore the new lore
+     * @return the builder for chaining
+     */
+    public B setTextLore(List<TextHolder> lore) {
+        if (this.hasNoItemMeta) return (B) this;
+        Lore itemLore = new Lore(meta);
+        itemLore.copyFrom(lore.toArray(new TextHolder[0]));
+        itemLore.toItemLore(item, false);
         return (B) this;
     }
 
@@ -192,6 +221,40 @@ public abstract class BaseItemBuilder<B extends BaseItemBuilder<B>> {
     public B setUnbreakable(boolean breakable) {
         if (this.hasNoItemMeta || VersionHelper.IS_UNBREAKABLE_LEGACY) return (B) this;
         this.meta.setUnbreakable(breakable);
+        return (B) this;
+    }
+
+    /**
+     * Add all the item flags to the item meta
+     * @return the builder for chaining
+     */
+    public B addAllItemFlags() {
+        if (this.hasNoItemMeta) return (B) this;
+        this.meta.addItemFlags(flags);
+        return (B) this;
+    }
+
+    /**
+     * Adds an item flag to the item meta.
+     * @param flag the flag to add
+     * @return the updated item meta
+     */
+    public B addItemFlags(ItemFlag flag) {
+        if (this.hasNoItemMeta) return (B) this;
+        this.meta.addItemFlags(flag);
+        return (B) this;
+    }
+
+    /**
+     * Adds an attribute modifier to the item meta.
+     *
+     * @param  attribute  the attribute to modify
+     * @param  modifier   the modifier to apply
+     * @return            the updated item meta
+     */
+    public B addAttributeModifier(Attribute attribute, AttributeModifier modifier) {
+        if (this.hasNoItemMeta) return (B) this;
+        this.meta.addAttributeModifier(attribute, modifier);
         return (B) this;
     }
 
