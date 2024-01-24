@@ -258,6 +258,12 @@ public interface IMenu extends Iterable<MenuItem>, InventoryHolder {
     void updateTitle(String title);
 
     /**
+     * Update the inventory with the title (RE-OPENS THE INVENTORY)
+     * @param title the new title
+     */
+    void updateTitle(TextHolder title);
+
+    /**
      * Open the inventory for the provided player.
      * @apiNote Will not work if the player is sleeping.
      * @param entity the provided entity to open the inventory for.
