@@ -12,22 +12,18 @@ import me.flame.menus.menu.fillers.*;
 import me.flame.menus.modifiers.Modifier;
 
 import org.bukkit.entity.HumanEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * Menu that allows you to have multiple pages
  * <p>1.1.0: PaginatedMenu straight out of Triumph-GUIS</p>
  * <p>1.4.0: PaginatedMenu rewritten as List<Page></p>
- * <p>2.0.0: PaginatedMenu rewritten as List<ItemData> instead to improve DRY</p>
+ * <p>2.0.0: PaginatedMenu rewritten as List<ItemData> instead to improve DRY and reduce it by about 250+ lines</p>
  * @since 2.0.0
  * @author FlameyosFlow
  */
@@ -36,33 +32,13 @@ public final class PaginatedMenu extends Menu implements Pagination {
     @NotNull
     final List<ItemData> pages;
 
-    private int pageNum;
+    private int pageNumber;
 
-    @Getter
-    private int nextItemSlot = -1, previousItemSlot = -1;
+    private @Getter int nextItemSlot = -1, previousItemSlot = -1;
 
     @Setter Consumer<PageChangeEvent> onPageChange = event -> {};
 
     private final MenuFiller pageDecorator = PageDecoration.create(this);
-
-    @Override
-    public void updateTitle(String title) {
-        updateTitle(TextHolder.of(title));
-    }
-
-    public void updateTitle(TextHolder title) {
-        Inventory oldInventory = this.inventory;
-        Inventory updatedInventory = type == MenuType.CHEST
-                ? title.toInventory(this, size)
-                : title.toInventory(this, type.getType());
-        this.title = title;
-        this.inventory = updatedInventory;
-
-        this.updating = true;
-        List<HumanEntity> entities = ImmutableList.copyOf(oldInventory.getViewers());
-        entities.forEach(e -> e.openInventory(updatedInventory));
-        this.updating = false;
-    }
 
     public <T extends MenuFiller> T getPageDecorator(Class<T> pageClass) {
         return pageClass.cast(pageDecorator);
@@ -85,10 +61,9 @@ public final class PaginatedMenu extends Menu implements Pagination {
         super(pageRows, title, modifiers, true);
         this.pages = new ArrayList<>(pageCount);
 
-        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             pages.add(new ItemData(this));
-        }
-        this.data = pages.get(pageNum);
+        this.data = pages.get(pageNumber);
     }
 
     /**
@@ -98,15 +73,12 @@ public final class PaginatedMenu extends Menu implements Pagination {
         super(type, title, modifiers, true);
         this.pages = new ArrayList<>(pageCount);
 
-        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
             pages.add(new ItemData(this));
-        }
-        this.data = pages.get(pageNum);
+        this.data = pages.get(pageNumber);
     }
 
-    public ImmutableList<ItemData> pages() {
-        return ImmutableList.copyOf(pages);
-    }
+    public ImmutableList<ItemData> pages() { return ImmutableList.copyOf(pages); }
 
     @NotNull
     public static PaginatedMenu create(String title, int rows, int pages) {
@@ -149,35 +121,28 @@ public final class PaginatedMenu extends Menu implements Pagination {
     }
 
     public static @NotNull PaginatedMenu create(MenuData data) {
-        PaginatedMenu menu = data.getType() == MenuType.CHEST
-                ? create(data.getTitle(), data.getRows(), data.getPages(), data.getModifiers())
-                : create(data.getTitle(), data.getType(), data.getPages(), data.getModifiers());
-        menu.setContents(data.getItems());
-        return menu;
+        Menu menu = data.intoMenu();
+        try { return (PaginatedMenu) menu; } catch (ClassCastException error) {
+            throw new IllegalArgumentException(
+                "Attempted to create a PaginatedMenu from an incompatible MenuData object." +
+                "\nExpected PaginatedMenu, but got " + data.getClass().getSimpleName() +
+                "\nFix: MenuData must include the size of the pages, or it'll default to 1."
+            );
+        }
     }
 
     public void recreateInventory() {
-        this.rows++;
-        this.size = rows * 9;
-        this.inventory = type == MenuType.CHEST ? title.toInventory(this, this.size)
-                : title.toInventory(this, type.getType());
-        pages.forEach(ItemData::recreateInventory);
+        super.recreateInventory();
+        pages.forEach((data) -> {
+            if (data != this.data) data.recreateInventory();
+        });
     }
-
-    @Override
-    public void update() {
-        this.updating = true;
-        data.recreateItems(inventory);
-        List<HumanEntity> entities = ImmutableList.copyOf(inventory.getViewers());
-        entities.forEach(e -> ((Player) e).updateInventory());
-        this.updating = false;
-	}
 
     @Override
     public void setContents(MenuItem... items) {
         ItemData itemData = new ItemData(this);
         itemData.contents(items);
-        pages.set(pageNum, itemData);
+        pages.set(pageNumber, itemData);
         data = itemData;
     }
 
@@ -186,6 +151,7 @@ public final class PaginatedMenu extends Menu implements Pagination {
      *
      * @param  slot        the position of the slot
      * @param  item        the item stack to set
+     * @deprecated Use {@link MenuBuilder#nextPageItem(int, MenuItem)}
      */
     @Deprecated
     @ApiStatus.ScheduledForRemoval(inVersion = "2.1.0")
@@ -199,6 +165,7 @@ public final class PaginatedMenu extends Menu implements Pagination {
      *
      * @param  pos         the position of the slot
      * @param  item        the item stack to set
+     * @deprecated Use {@link MenuBuilder#nextPageItem(Slot, MenuItem)}
      */
     @Deprecated
     @ApiStatus.ScheduledForRemoval(inVersion = "2.1.0")
@@ -213,7 +180,10 @@ public final class PaginatedMenu extends Menu implements Pagination {
      *
      * @param  slot  the position of the slot
      * @param  item  the menu item to set
+     * @deprecated Use {@link MenuBuilder#previousPageItem(int, MenuItem)}
      */
+    @Deprecated
+    @ApiStatus.ScheduledForRemoval(inVersion = "2.1.0")
     public void setPreviousPageItem(int slot, @NotNull MenuItem item) {
         this.previousItemSlot = slot;
         pages.forEach(page -> page.setItem(slot, item));
@@ -224,169 +194,14 @@ public final class PaginatedMenu extends Menu implements Pagination {
      *
      * @param  pos   the position of the slot
      * @param  item  the menu item to set
+     * @deprecated Use {@link MenuBuilder#previousPageItem(Slot, MenuItem)}
      */
+    @Deprecated
+    @ApiStatus.ScheduledForRemoval(inVersion = "2.1.0")
     public void setPreviousPageItem(@NotNull Slot pos, @NotNull MenuItem item) {
         int slot = pos.slot;
         this.previousItemSlot = slot;
         pages.forEach(page -> page.setItem(slot, item));
-    }
-
-    /**
-     * Updates the page {@link MenuItem} on the slot in the page
-     * Can get the slot from {@link InventoryClickEvent#getSlot()}
-     *
-     * @param slot      The slot of the item to update
-     * @param itemStack The new {@link ItemStack}
-     */
-    @Override
-    public void updateItem(final int slot, @NotNull final ItemStack itemStack) {
-        if (!data.hasItem(slot)) return;
-        final MenuItem menuItem = data.getItem(slot);
-
-        if (menuItem == null) {
-            data.setItem(slot, itemStack);
-            return;
-        }
-
-        menuItem.setItemStack(itemStack);
-        data.setItem(slot, menuItem.getItemStack());
-    }
-
-    /**
-     * A function to check if an item exists at a given index.
-     *
-     * @param  index  the index to check
-     * @return        true if an item exists at the given index, false otherwise
-     */
-    public boolean hasItem(int index) {
-        return data.getItem(index) != null;
-    }
-
-    /**
-     * A function to check if an item exists at a given slot.
-     *
-     * @param  slot   the slot to check
-     * @return        true if an item exists at the given slot, false otherwise
-     */
-    public boolean hasItem(@NotNull Slot slot) {
-        return data.getItem(slot) != null;
-    }
-
-    /**
-     * A function to check if an item exists at a given item.
-     *
-     * @param  item   the item to check
-     * @return        true if an item exists at the given item, false otherwise
-     */
-    public boolean hasItem(MenuItem item) {
-        return getItem(it -> it.equals(item)) != null;
-    }
-
-    /**
-     * A function to check if an item exists at a given item.
-     *
-     * @param  item   the item to check
-     * @return        true if an item exists at the given item, false otherwise
-     */
-    public boolean hasItem(ItemStack item) {
-        return data.getItem(it -> it.getItemStack().equals(item)) != null;
-    }
-
-    /**
-     * Alternative {@link #updateItem(int, ItemStack)} that uses <i>ROWS</i> and <i>COLUMNS</i> instead
-     *
-     * @param position      The slot of the item to update
-     * @param itemStack The new {@link ItemStack}
-     */
-    @Override
-    public void updateItem(@NotNull Slot position, @NotNull final ItemStack itemStack) {
-        updateItem(position.slot, itemStack);
-    }
-
-    /**
-     * Alternative {@link #updateItem(int, ItemStack)} that uses {@link MenuItem} instead
-     *
-     * @param slot The slot of the item to update
-     * @param item The new ItemStack
-     */
-    public void updateItem(final int slot, @NotNull final MenuItem item) {
-        if (!data.hasItem(slot)) return;
-        data.setItem(slot, item);
-    }
-
-    @Override
-    public void removeItem(@NotNull final MenuItem... item) {
-        data.removeItem(item);
-    }
-
-    /**
-     * @param itemStacks the items to remove
-     */
-    @Override
-    public void removeItem(@NotNull List<MenuItem> itemStacks) {
-        data.removeItem(itemStacks.toArray(new MenuItem[0]));
-    }
-
-    @Override
-    public void removeItem(@NotNull final ItemStack... item) {
-        data.removeItem(item);
-    }
-
-    @Override
-    public boolean addItem(MenuItem... items) {
-        data.addItem(items);
-        return false;
-    }
-
-    @Override
-    public boolean addItem(ItemStack... items) {
-        data.addItem(items);
-        return false;
-    }
-
-    @Override
-    public void setItem(@NotNull Slot position, MenuItem item) {
-        data.setItem(position, item);
-    }
-
-    @Override
-    public void setItem(int slot, ItemStack item) {
-        data.setItem(slot, item);
-    }
-
-    @Override
-    public void setItem(@NotNull Slot position, ItemStack item) {
-        data.setItem(position, MenuItem.of(item));
-    }
-
-    @Override
-    public MenuItem getItem(int slot) {
-        return data.getItem(slot);
-    }
-
-    @Override
-    public MenuItem getItem(@NotNull Slot slot) {
-        return data.getItem(slot);
-    }
-
-    @Override
-    public MenuItem getItem(@NotNull Predicate<MenuItem> item) {
-        return data.getItem(item);
-    }
-
-    @Override
-    public Optional<MenuItem> get(@NotNull Slot slot) {
-        return data.get(slot);
-    }
-
-    @Override
-    public Optional<MenuItem> get(@NotNull Predicate<MenuItem> item) {
-        return data.get(item);
-    }
-
-    @Override
-    public Optional<MenuItem> get(int index) {
-        return data.get(index);
     }
 
     /**
@@ -399,7 +214,6 @@ public final class PaginatedMenu extends Menu implements Pagination {
         if (player.isSleeping()) return;
 
         int pagesSize = pages.size();
-
         if (openPage < 0 || openPage >= pagesSize) {
             throw new IllegalArgumentException(
                     "\"openPage\" out of bounds; must be 0-" + (pagesSize - 1) +
@@ -408,10 +222,8 @@ public final class PaginatedMenu extends Menu implements Pagination {
             );
         }
 
-        this.pageNum = openPage;
+        this.pageNumber = openPage;
         this.data = pages.get(openPage);
-
-        this.update();
         player.openInventory(inventory);
     }
 
@@ -431,7 +243,7 @@ public final class PaginatedMenu extends Menu implements Pagination {
      */
     @Override
     public int getCurrentPageNumber() {
-        return pageNum + 1;
+        return pageNumber + 1;
     }
 
     /**
@@ -452,11 +264,11 @@ public final class PaginatedMenu extends Menu implements Pagination {
     @Override
     public boolean next() {
         int size = pages.size();
-        if (pageNum + 1 >= size) return false;
-        int oldPageNum = pageNum;
+        if (pageNumber + 1 >= size) return false;
+        int oldPageNum = pageNumber;
 
-        pageNum++;
-        this.data = pages.get(pageNum);
+        pageNumber++;
+        this.data = pages.get(pageNumber);
 
         update();
         return true;
@@ -469,10 +281,10 @@ public final class PaginatedMenu extends Menu implements Pagination {
      */
     @Override
     public boolean previous() {
-        if (pageNum - 1 < 0) return false;
+        if (pageNumber - 1 < 0) return false;
 
-        pageNum--;
-        this.data = pages.get(pageNum);
+        pageNumber--;
+        this.data = pages.get(pageNumber);
 
         update();
         return true;
@@ -488,23 +300,20 @@ public final class PaginatedMenu extends Menu implements Pagination {
         int size = pages.size();
         if (pageNum < 0 || pageNum > size) return false;
 
-        this.pageNum = pageNum;
+        this.pageNumber = pageNum;
         this.data = pages.get(pageNum);
-
         update();
         return true;
     }
 
     @Override
     public @Nullable ItemData getPage(int index) {
-        if (index < 0 || index > pages.size()) return null;
-        return pages.get(index);
+        return (index < 0 || index > pages.size()) ? null : pages.get(index);
     }
 
     @Override
     public Optional<ItemData> getOptionalPage(int index) {
-        if (index < 0 || index > pages.size()) return Optional.empty();
-        return Optional.ofNullable(getPage(index));
+        return (index < 0 || index > pages.size()) ? Optional.empty() : Optional.ofNullable(getPage(index));
     }
 
     @Override
@@ -545,31 +354,23 @@ public final class PaginatedMenu extends Menu implements Pagination {
     @Override
     public void removePageItem(ItemStack... slot) {
         Set<ItemStack> set = ImmutableSet.copyOf(slot);
-        for (ItemData page : pages) {
-            page.indexed((item, index) -> { if (set.contains(item.getItemStack())) page.removeItem(index); });
-        }
+        for (ItemData page : pages) page.indexed((item, index) -> { if (set.contains(item.getItemStack())) page.removeItem(index); });
     }
 
     @Override
     public void removePageItem(MenuItem... slot) {
         Set<MenuItem> set = ImmutableSet.copyOf(slot);
-        for (ItemData page : pages) {
-            page.indexed((item, index) -> { if (set.contains(item)) page.removeItem(index); });
-        }
+        for (ItemData page : pages) page.indexed((item, index) -> { if (set.contains(item)) page.removeItem(index); });
     }
 
     @Override
     public void setPageItem(int[] slots, MenuItem[] items) {
         int size = slots.length;
-        for (ItemData page : pages) {
-            setPageItem0(page, size, slots, items);
-        }
+        for (ItemData page : pages) setPageItem0(page, size, slots, items);
     }
 
     private static void setPageItem0(ItemData page, int size, int[] slots, MenuItem[] items) {
-        for (int i = 0; i < size; i++) {
-            page.setItem(slots[i], items[i]);
-        }
+        for (int i = 0; i < size; i++) page.setItem(slots[i], items[i]);
     }
 
     @Override
@@ -592,37 +393,23 @@ public final class PaginatedMenu extends Menu implements Pagination {
     }
 
     private static void setPageItem0(ItemData page, int size, Slot[] slots, ItemStack... items) {
-        for (int i = 0; i < size; i++) {
-            page.setItem(slots[i], MenuItem.of(items[i]));
-        }
+        for (int i = 0; i < size; i++) page.setItem(slots[i], MenuItem.of(items[i]));
     }
 
     @Override
     public void setPageItem(Slot[] slots, ItemStack item) {
-        for (ItemData page : pages) {
-            setPageItem0(page, slots.length, slots, item);
-        }
+        for (ItemData page : pages) setPageItem0(page, slots.length, slots, item);
     }
 
     private static void setPageItem0(ItemData page, int size, Slot[] slots, ItemStack item) {
-        for (Slot slot : slots) {
-            page.setItem(slot, MenuItem.of(item));
-        }
+        for (Slot slot : slots) page.setItem(slot, MenuItem.of(item));
     }
 
     @Override
-    public @NotNull MenuData getMenuData() {
-        return type == MenuType.CHEST
-                ? new MenuData(title, rows, pages.size(), modifiers, data.getItems())
-                : new MenuData(title, type, pages.size(), modifiers, data.getItems());
-    }
+    public @NotNull MenuData getMenuData() { return MenuData.intoData(this); }
 
     public PaginatedMenu copy() {
         return create(getMenuData());
-    }
-
-    public @NotNull ItemData getCurrentPage() {
-        return new ItemData(data);
     }
 
     public void setContents(ItemData data) {
