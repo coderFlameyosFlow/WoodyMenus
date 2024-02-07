@@ -169,6 +169,8 @@ dependencies {
     implementation("com.github.coderFlameyosFlow.WoodyMenus:core:2.0.6")
 }
 ```
+> [!CAUTION]
+> Calling `HandlerList.unregisterAll()` or `HandlerList.unregisterAll(JavaPlugin)` will break the library, so use with caution!
 
 You don't need to setup anything in your onEnable ~~(since 2.0.0)~~ or anything, just code right away!
  
